@@ -65,8 +65,12 @@ func (konfig Konfiguration) String() string {
 func ReadKonfig() (Konfiguration, error) {
 	fmt.Println("Reading konfiguration...")
 
-	konfigFile, err := os.Open("konfig.json")
+	path, err := os.Getwd()
+	if err != nil {
+		fmt.Println(err)
+	}
 
+	konfigFile, err := os.Open(fmt.Sprintf("%s/%s", path, "konfig.json"))
 	if err != nil {
 		return Konfiguration{}, err
 	}
