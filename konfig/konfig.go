@@ -63,8 +63,6 @@ func (konfig Konfiguration) String() string {
 }
 
 func ReadKonfig() (Konfiguration, error) {
-	fmt.Println("Reading konfiguration...")
-
 	path, err := os.Getwd()
 	if err != nil {
 		fmt.Println(err)

@@ -13,7 +13,7 @@ var rootCmd = &cobra.Command{
 	Use:   "konfigure",
 	Short: "konfigures K8s workloads",
 	Long: `konfigure helps you manage workloads deployed onto K8s,
-		   both application configuration and auxillary resources`,
+both application configuration and auxillary resources`,
 	SilenceUsage: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		k, err := konfig.ReadKonfig()
@@ -22,6 +22,7 @@ var rootCmd = &cobra.Command{
 			return err
 		}
 
+		fmt.Println("Reading konfiguration...")
 		fmt.Println(k)
 		return nil
 	},
