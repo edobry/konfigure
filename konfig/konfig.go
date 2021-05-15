@@ -6,13 +6,35 @@ import (
 	"io/ioutil"
 	"os"
 	"strings"
+
+	"sigs.k8s.io/yaml"
 )
 
 type Konfiguration struct {
-	ApiVersion        string                `json:"apiVersion"`
-	Environment       Environment           `json:"environment"`
-	Deployments       map[string]Deployment `json:"deployments"`
-	ExternalResources ExternalResources     `json:"externalResources"`
+	ApiVersion        string                 `json:"apiVersion"`
+	Environment       Environment            `json:"environment"`
+	Deployments       map[string]*Deployment `json:"deployments"`
+	ExternalResources ExternalResources      `json:"externalResources"`
+}
+
+func (konfig Konfiguration) String() string {
+	var b strings.Builder
+
+	fmt.Fprintf(&b, "konfiguration %s\n\n", konfig.ApiVersion)
+
+	fmt.Fprint(&b, konfig.Environment.String())
+	fmt.Fprintln(&b)
+
+	fmt.Fprintf(&b, "Deployments:\n\n")
+	for _, deploy := range konfig.Deployments {
+		fmt.Fprintln(&b, deploy)
+		fmt.Fprintln(&b)
+	}
+
+	fmt.Fprintln(&b)
+	// fmt.Fprint(&b, konfig.ExternalResources)
+
+	return b.String()
 }
 
 type Environment struct {
@@ -26,18 +48,104 @@ type Environment struct {
 	EksNodegroup    string `json:"eksNodegroup"`
 }
 
+func (env Environment) String() string {
+	var b strings.Builder
+
+	fmt.Fprintf(&b, "Initializing DP environment '%s'...\n", env.Name)
+
+	fmt.Fprintf(&b, "Terraform environment: '%s'\n", env.TerraformEnv)
+	fmt.Fprintf(&b, "AWS account: '%s'\n", env.AwsAccount)
+	fmt.Fprintf(&b, "AWS region: '%s'\n", env.AwsRegion)
+	fmt.Fprintf(&b, "K8s context: '%s'\n", env.K8sContext)
+	fmt.Fprintf(&b, "K8s namespace: '%s'\n", env.K8sNamespace)
+
+	return b.String()
+}
+
 type Deployment struct {
-	Chart      string                 `json:"chart"`
-	Version    string                 `json:"version"`
-	Source     string                 `json:"source"`
-	Values     map[string]interface{} `json:"values"`
-	Disabled   bool                   `json:"disabled"`
-	CdDisabled bool                   `json:"cdDisabled"`
+	Name       string
+	Chart      string   `json:"chart"`
+	Version    string   `json:"version"`
+	Source     string   `json:"source"`
+	Values     ValueMap `json:"values"`
+	Disabled   bool     `json:"disabled"`
+	CdDisabled bool     `json:"cdDisabled"`
+}
+
+type ValueMap map[string]interface{}
+
+// func (vals ValueMap) String() string {
+// 	var b strings.Builder
+// 	var valImpl interface{}
+
+// 	for key, val := range vals {
+// 		switch e := val.(type) {
+// 		case string:
+// 			valImpl = e
+// 		case map[string]interface{}:
+// 			valImpl = ValueMap(e).String()
+// 			fmt.Fprintf(&b, "\n\t%v", valImpl)
+// 		default:
+// 			panic("Unknown event type")
+// 		}
+
+// 		fmt.Fprintf(&b, "%v: %v\n", key, valImpl)
+// 	}
+
+// 	return b.String()
+// }
+
+func (vals ValueMap) String() string {
+	var b strings.Builder
+
+	y, err := yaml.Marshal(vals)
+	if err != nil {
+		fmt.Printf("err: %v\n", err)
+		os.Exit(1)
+	}
+
+	fmt.Fprintf(&b, "    %v", strings.ReplaceAll(string(y), "\n", "\n  "))
+
+	return b.String()
+}
+
+func (deploy Deployment) String() string {
+	var b strings.Builder
+
+	fmt.Fprintf(&b, "%s:\n", deploy.Name)
+
+	fmt.Fprintf(&b, "  Chart: %s\n", deploy.Chart)
+
+	val := deploy.Version != ""
+		?"":""
+	if deploy.Version != "" {
+		fmt.Sprintf(":%s %s\n", deploy.Version)
+	}
+	if deploy.Source != "" {
+		fmt.Fprintf(&b, "  Source: %s\n", deploy.Source)
+	}
+
+	if deploy.Disabled {
+		fmt.Fprintln(&b, "  Disabled")
+	}
+
+	if deploy.CdDisabled {
+		fmt.Fprintln(&b, "  CD Disabled")
+	}
+
+	if len(deploy.Values) > 0 {
+		fmt.Fprintln(&b, "  Values:")
+		fmt.Fprintln(&b, deploy.Values)
+	}
+
+	// fmt.Fprintf(&b, ": '%s'\n", deploy.)
+
+	return b.String()
 }
 
 type ExternalResources struct {
-	SecretPresets map[string]interface{}      `json:"secretPresets"`
-	Deployments   map[string]ExternalResource `json:"deployments"`
+	SecretPresets map[string]interface{}       `json:"secretPresets"`
+	Deployments   map[string]*ExternalResource `json:"deployments"`
 }
 
 type ExternalResource struct {
@@ -46,20 +154,6 @@ type ExternalResource struct {
 	Service         map[string]string `json:"service"`
 	ExternalSecrets map[string]string `json:"externalSecrets"`
 	SecretPreset    string            `json:"$secretPreset"`
-}
-
-func (konfig Konfiguration) String() string {
-	var b strings.Builder
-
-	fmt.Fprintf(&b, "Initializing DP environment '%s'...\n", konfig.Environment.Name)
-
-	fmt.Fprintf(&b, "Terraform environment: '%s'\n", konfig.Environment.TerraformEnv)
-	fmt.Fprintf(&b, "AWS account: '%s'\n", konfig.Environment.AwsAccount)
-	fmt.Fprintf(&b, "AWS region: '%s'\n", konfig.Environment.AwsRegion)
-	fmt.Fprintf(&b, "K8s context: '%s'\n", konfig.Environment.K8sContext)
-	fmt.Fprintf(&b, "K8s namespace: '%s'\n", konfig.Environment.K8sNamespace)
-
-	return b.String()
 }
 
 func ReadKonfig() (Konfiguration, error) {
@@ -86,6 +180,12 @@ func ReadKonfig() (Konfiguration, error) {
 
 	json.Unmarshal(bytes, &konfig)
 
+	for name, deploy := range konfig.Deployments {
+		// fmt.Println("name:", name)
+		deploy.Name = name
+		// fmt.Println("deploy:", deploy)
+	}
+
 	// fmt.Println(konfig)
 
 	// spew.Dump(konfig)
@@ -100,6 +200,11 @@ func ReadKonfig() (Konfiguration, error) {
 	// fmt.Println(konfig.Deployments)
 
 	konfig.Environment.Name = "dev"
+
+	// for name, deploy := range konfig.Deployments {
+	// 	fmt.Println("name:", name)
+	// 	fmt.Println("deploy:", deploy)
+	// }
 
 	return konfig, nil
 }
