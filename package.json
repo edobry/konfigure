@@ -1,33 +1,56 @@
 {
   "name": "konfigure",
   "version": "0.0.0",
-  "description": "konfigure",
-  "main": "lib/main.js",
-  "bin": "./bin/konfigure",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+  "author": "Eugene Dobry @edobry",
+  "bin": {
+    "konfigure": "./bin/run"
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/chainalysis/konfigure.git"
-  },
-  "author": "",
-  "license": "ISC",
-  "bugs": {
-    "url": "https://github.com/chainalysis/konfigure/issues"
-  },
-  "homepage": "https://github.com/chainalysis/konfigure#readme",
-  "dependencies": {
-    "deepmerge": "^4.2.2",
-    "js-yaml": "^4.1.0",
-    "yargs": "^17.1.1"
-  },
+  "bugs": "https://github.com/chainalysis/konfigure/issues",
   "devDependencies": {
-    "@types/js-yaml": "^4.0.3",
-    "@types/node": "^16.7.9",
-    "@types/yargs": "^17.0.2",
-    "jest": "^27.1.0",
-    "jest-junit": "^12.2.0",
-    "ts-jest": "^27.0.5"
+    "@oclif/dev-cli": "^1.26.0",
+    "@types/node": "^10.17.60",
+    "eslint": "^5.16.0",
+    "eslint-config-oclif": "^3.1.0",
+    "eslint-config-oclif-typescript": "^0.1.0",
+    "globby": "^10.0.2",
+    "ts-node": "^8.10.2",
+    "typescript": "^3.9.10"
+  },
+  "engines": {
+    "node": ">=8.0.0"
+  },
+  "files": [
+    "/bin",
+    "/lib",
+    "/npm-shrinkwrap.json",
+    "/oclif.manifest.json"
+  ],
+  "homepage": "https://github.com/chainalysis/konfigure",
+  "keywords": [
+    "oclif"
+  ],
+  "license": "MIT",
+  "main": "lib/index.js",
+  "oclif": {
+    "commands": "./lib/commands",
+    "bin": "konfigure",
+    "plugins": [
+      "@oclif/plugin-help"
+    ]
+  },
+  "repository": "chainalysis/konfigure",
+  "scripts": {
+    "postpack": "rm -f oclif.manifest.json",
+    "posttest": "eslint . --ext .ts --config .eslintrc",
+    "prepack": "rm -rf lib && tsc -b && oclif-dev manifest && oclif-dev readme",
+    "test": "echo NO TESTS",
+    "version": "oclif-dev readme && git add README.md"
+  },
+  "types": "lib/index.d.ts",
+  "dependencies": {
+    "@oclif/command": "^1.8.0",
+    "@oclif/config": "^1.17.0",
+    "@oclif/plugin-help": "^3.2.3",
+    "tslib": "^1.14.1"
   }
 }
