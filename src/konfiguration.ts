@@ -1,8 +1,10 @@
 import { stripIndents, codeBlock } from 'common-tags'
+import { pretty, printArgs } from './util';
 
 interface KonfigProps {
     apiVersion: string,
     environment: Environment,
+    chartDefaults: { [index: string]: Deployment }
     deployments: { [index: string]: Deployment },
     externalResources: ExternalResources
 }
@@ -20,11 +22,13 @@ interface Environment {
 
 interface Deployment {
     chart: string,
-    version: string,
-    source: string,
-    values: { [index: string]: object }
-    disabled: boolean,
-    cdDisabled: boolean
+    type?: "helm" | "cdk8s"
+    source?: "local" | "artifactory" | "remote",
+    version?: string,
+    values?: { [index: string]: string | number | ValuesMap }
+    disabled?: boolean,
+    cdDisabled?: boolean,
+    nestValues?: boolean
 }
 interface NamedDeployment extends Deployment {
     name: string
@@ -35,11 +39,15 @@ interface ExternalResources {
     deployments:  { [index: string]: ExternalResource }
 }
 
-type StringMap = { [index: string]: string };
+type ValuesMap = { [index: string]: string | number | ValuesMap };
 
-interface ExternalResource extends Deployment {
-    service: StringMap,
-    externalSecrets: StringMap,
+interface ExternalResource {
+    service: {
+        name?: string,
+        address?: string,
+        port?: number
+    },
+    externalSecrets: ValuesMap,
     secretPreset: string
 }
 
@@ -65,40 +73,85 @@ export class Konfiguration {
         let output = codeBlock`
             ${this.header()}
 
+            Chart defaults:
+
+                ${Object.entries(this.konfig.chartDefaults)
+                    .map(([name, dep]) =>
+                        deploymentToString(name, dep))
+                    .join('\n\n')}
+
             Deployments:
 
-            ${Object.entries(this.konfig.deployments)
-                .map(([name, dep]) =>
-                    deploymentToString(name, dep))
-                .join('\n\n')}
+                ${Object.entries(this.konfig.deployments)
+                    .map(([name, dep]) =>
+                        deploymentToString(name, dep))
+                    .join('\n\n')}
+            
+            External resources:
+
+                ${Object.entries(this.konfig.externalResources.deployments)
+                    .map(([name, resource]) =>
+                        externalResourceToString(name, resource))
+                    .join('\n\n')}
         `;  
 
         return output;
     }
 };
 
+function externalResourceToDeployment(resource: ExternalResource): Deployment {
+    return {
+        chart: "external-service",
+        values: { ...resource }
+        
+    }
+}
+
 function deploymentToString(name: string,
     { chart, version, source, disabled, cdDisabled, values }: Deployment
 ): string {
-    let output = codeBlock`
-        ${name}:
-            Chart: ${chart}
-    `;
+    // let output = '';
     
-    if(version)
-        output += `\n    Version: ${version}`
+    // if(chart)
+    //     output += `\n    Chart: ${chart}`;
+    
+    // if(version)
+    //     output += `\n    Version: ${version}`
 
-    if(source)
-        output += `\n    Source: ${source}`
+    // if(source)
+    //     output += `\n    Source: ${source}`
 
-    if(disabled)
-        output += `\n    Disabled: ${disabled}`
+    // if(disabled)
+    //     output += `\n    Disabled: ${disabled}`
 
-    if(cdDisabled)
-        output += `\n    CD Disabled: ${cdDisabled}`
+    // if(cdDisabled)
+    //     output += `\n    CD Disabled: ${cdDisabled}`
 
-    if(values && Object.keys(values).length !== 0)
-        output += `\n    Values: ${JSON.stringify(values)}`
+    return pretty`
+        ${name}:
+            ${printArgs({
+                "Chart": chart,
+                "Version": version,
+                "Source": source,
+                "Disabled": disabled,
+                "CD Disabled": cdDisabled,
+                "Values": values
+            })}
+    `;
+}
 
-    return output;
+function externalResourceToString(name: string,
+    { service, secretPreset, externalSecrets }: ExternalResource
+): string {
+    const test = printArgs({
+                "Service": service,
+                "Secrets": externalSecrets})
+
+    console.log("the test")
+    console.log(test)
+
+    return pretty`
+        ${name}:
+            ${test}
+    `;
 }
