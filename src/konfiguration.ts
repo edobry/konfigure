@@ -1,11 +1,13 @@
 import { stripIndents, codeBlock } from 'common-tags'
 import { pretty, printArgs } from './util';
 
+type DeploymentMap = { [index: string]: Deployment };
+
 interface KonfigProps {
     apiVersion: string,
     environment: Environment,
-    chartDefaults: { [index: string]: Deployment }
-    deployments: { [index: string]: Deployment },
+    chartDefaults: DeploymentMap
+    deployments: DeploymentMap,
     externalResources: ExternalResources
 }
 
