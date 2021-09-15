@@ -85,7 +85,7 @@ export class Konfiguration {
     }
 
     filterDeployments(filter: string[]) {
-        let predicate: (deployment: [string, Deployment]) => boolean;
+        let instancePredicate: (deployment: [string, Deployment]) => boolean;
 
         if(filter[0] == "all") {
             console.log("Processing all deployments")
@@ -93,19 +93,21 @@ export class Konfiguration {
             if(filter.length > 1)
                 console.warn("Additional instances specified after 'all' keyword, will be ignored.\n")
             
-            predicate = () => true;
+            instancePredicate = () => true;
         } else if(filter[0] == "chart") {
             const chartFilter = filter.slice(1).join(', ');
             console.log(`Limiting to instances of chart(s): ${chartFilter}`);
-            predicate = ([, deployment]) => chartFilter.includes(deployment.chart);
+            instancePredicate = ([, deployment]) => chartFilter.includes(deployment.chart);
         }
         else {
             console.log(`Limiting to: ${filter.join(', ')}`);
-            predicate = ([name]) => filter.includes(name);
+            instancePredicate = ([name]) => filter.includes(name);
         }
 
         return Object.entries(this.deployments)
-            .filter(predicate)
+            .filter(instancePredicate)
+            .filter(([, { disabled }]) =>
+                !disabled);
     }
 
     header(): string {
@@ -162,23 +164,6 @@ function externalResourceToDeployment(resource: ExternalResource): Deployment {
 export function deploymentToString(name: string,
     { chart, version, source, disabled, cdDisabled, values }: Deployment
 ): string {
-    // let output = '';
-    
-    // if(chart)
-    //     output += `\n    Chart: ${chart}`;
-    
-    // if(version)
-    //     output += `\n    Version: ${version}`
-
-    // if(source)
-    //     output += `\n    Source: ${source}`
-
-    // if(disabled)
-    //     output += `\n    Disabled: ${disabled}`
-
-    // if(cdDisabled)
-    //     output += `\n    CD Disabled: ${cdDisabled}`
-
     return pretty`
         ${name}:
             ${printArgs({
