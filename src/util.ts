@@ -4,15 +4,6 @@ import { Konfiguration } from "./konfiguration";
 
 import { TemplateTag, createTag, inlineArrayTransformer, splitStringTransformer, stripIndent, stripIndentTransformer, trimResultTransformer } from 'common-tags'
 
-export function processInstances(instances: string[]) {
-    if(instances[0] == "all") {
-        console.log("processing all instances")
-        if(instances.length > 1)
-            console.warn("Additional instances specified after 'all' keyword, will be ignored.\n")
-    } else
-        console.log(`instances: ${instances.join(', ')}`);
-}
-
 export function readKonfig() {
     console.log("Reading konfiguration...");
 

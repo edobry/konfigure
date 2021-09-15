@@ -1,6 +1,7 @@
 import { Command, flags } from '@oclif/command'
 import { commonFlags, instanceArg } from '../flags';
-import { processInstances, readKonfig } from '../util';
+import { deploymentToString } from '../konfiguration';
+import { readKonfig } from '../util';
 
 export default class Render extends Command {
   static description = "render instance manifests";
@@ -23,7 +24,7 @@ export default class Render extends Command {
       dryrun, testing, auth, debug
     }} = this.parse(Render)
 
-    this.log("deploy command");
+    this.log("render command");
 
     if(dryrun)
       this.log("-- DRYRUN MODE --")
@@ -34,9 +35,14 @@ export default class Render extends Command {
     if(debug)
       this.log("-- DEBUG MODE --")
 
-    processInstances(argv)
-
     const konfig = readKonfig();
-    this.log(konfig.toString());
+    this.log(konfig.header())
+    this.log()
+
+    const deployments = konfig.filterDeployments(argv);
+    this.log()
+    
+    this.log(deployments.map(([name, dep]) =>
+      deploymentToString(name, dep)).join('\n'));
   }
 }

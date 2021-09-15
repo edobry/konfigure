@@ -56,6 +56,30 @@ export class Konfiguration {
         
     }
 
+    filterDeployments(filter: string[]) {
+        let predicate: (deployment: [string, Deployment]) => boolean;
+
+        if(filter[0] == "all") {
+            console.log("Processing all deployments")
+            
+            if(filter.length > 1)
+                console.warn("Additional instances specified after 'all' keyword, will be ignored.\n")
+            
+            predicate = () => true;
+        } else if(filter[0] == "chart") {
+            const chartFilter = filter.slice(1).join(', ');
+            console.log(`Limiting to instances of chart(s): ${chartFilter}`);
+            predicate = ([, deployment]) => chartFilter.includes(deployment.chart);
+        }
+        else {
+            console.log(`Limiting to: ${filter.join(', ')}`);
+            predicate = ([name]) => filter.includes(name);
+        }
+
+        return Object.entries(this.konfig.deployments)
+            .filter(predicate)
+    }
+
     header(): string {
         return codeBlock`
             konfiguration ${this.konfig.apiVersion}
@@ -107,7 +131,7 @@ function externalResourceToDeployment(resource: ExternalResource): Deployment {
     }
 }
 
-function deploymentToString(name: string,
+export function deploymentToString(name: string,
     { chart, version, source, disabled, cdDisabled, values }: Deployment
 ): string {
     // let output = '';
