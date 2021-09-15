@@ -50,12 +50,38 @@ interface ExternalResource {
         port?: number
     },
     externalSecrets: ValuesMap,
-    secretPreset: string
+    $secretPreset: string
+}
+
+function parseExternalResources(resources: ExternalResources): DeploymentMap {
+    return Object.fromEntries(Object.entries(resources.deployments).map(([name, resource]) => [name, {
+        chart: "external-service",
+        values: {
+            ...resource,
+            ...resources.secretPresets[resource.$secretPreset]
+        } as unknown as ValuesMap
+    }]));
+}
+
+function mergeChartDefaults(deployments: DeploymentMap, defaults: DeploymentMap): DeploymentMap {
+    return Object.fromEntries(Object.entries(deployments).map(([name, deployment]) => {
+        const { values = {}, ...chartDefaults } = defaults[deployment.chart] || {};
+
+        return [name, {
+            ...chartDefaults,
+            ...deployment
+        }]
+    }));
 }
 
 export class Konfiguration {
+    private deployments: DeploymentMap;
+
     constructor(public name: string, private konfig: KonfigProps) {
-        
+        this.deployments = {
+            ...mergeChartDefaults(konfig.deployments, konfig.chartDefaults),
+            ...parseExternalResources(konfig.externalResources)
+        }
     }
 
     filterDeployments(filter: string[]) {
@@ -78,7 +104,7 @@ export class Konfiguration {
             predicate = ([name]) => filter.includes(name);
         }
 
-        return Object.entries(this.konfig.deployments)
+        return Object.entries(this.deployments)
             .filter(predicate)
     }
 
@@ -167,7 +193,7 @@ export function deploymentToString(name: string,
 }
 
 function externalResourceToString(name: string,
-    { service, secretPreset, externalSecrets }: ExternalResource
+    { service, $secretPreset, externalSecrets }: ExternalResource
 ): string {
     const test = printArgs({
                 "Service": service,
