@@ -31,7 +31,7 @@ export default class Render extends Command {
 
         this.log("-- RENDER MODE --");
 
-        const konfig = readKonfig();
+        const konfig = readKonfig(argv[0]);
         this.log(konfig.header())
         this.log()
 
