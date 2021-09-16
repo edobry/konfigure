@@ -25,7 +25,7 @@ interface Environment {
 export interface Deployment {
     chart: string,
     type?: "helm" | "cdk8s"
-    source?: "local" | "artifactory" | "remote",
+    source?: "local" | "remote",
     version?: string,
     values?: { [index: string]: string | number | ValuesMap }
     disabled?: boolean,

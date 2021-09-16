@@ -77,8 +77,10 @@ export default class Render extends Command {
         const valueArgs = valueFiles.map(x => `-f ${x}`).join(' ')
 
         const versionArg = !dep.version ? '' : `--version=${dep.version} `
+        
+        const chartArg = dep.source == "local" ? dep.chart : `fimbulvetr/${dep.chart}`
 
-        const helmCommand = `helm template ${name} ${dep.chart} ${versionArg}${valueArgs}`
+        const helmCommand = `helm template ${name} ${chartArg} ${versionArg}${valueArgs}`
 
         this.log(`\n${helmCommand}`)
     }
