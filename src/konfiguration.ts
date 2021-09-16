@@ -22,7 +22,7 @@ interface Environment {
     eksNodegroup: string
 }
 
-interface Deployment {
+export interface Deployment {
     chart: string,
     type?: "helm" | "cdk8s"
     source?: "local" | "artifactory" | "remote",
@@ -82,6 +82,14 @@ export class Konfiguration {
             ...mergeChartDefaults(konfig.deployments, konfig.chartDefaults),
             ...parseExternalResources(konfig.externalResources)
         }
+    }
+
+    get environment() {
+        return this.konfig.environment;
+    }
+
+    getChartDefaults(chartName: string): Deployment | undefined {
+        return this.konfig.chartDefaults[chartName];
     }
 
     filterDeployments(filter: string[]) {

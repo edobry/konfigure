@@ -22,6 +22,12 @@ export const commonFlags = {
     help, dryrun, testing, auth, debug
 }
 
+export const envArg = {
+    name: "environment",
+    description:  "the environment to use",
+    required: true
+  }
+
 export const instanceArg = {
     name: "instances",
     description:  "the instances to process",
