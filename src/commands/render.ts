@@ -1,6 +1,6 @@
 import { Command, flags } from '@oclif/command'
 import * as tmp from "tmp-promise";
-import { $ } from 'zx'
+import { $, ProcessOutput } from 'zx'
 
 import { promisify } from "util";
 import { exec } from "child_process";
@@ -86,13 +86,22 @@ export default class Render extends Command {
         
         const chartArg = dep.source == "local" ? dep.chart : `fimbulvetr/${dep.chart}`
 
-        const helmArgs = ["template", name, chartArg, versionArg, ...valueArgs]
+        const helmArgs = ["template", name, chartArg, versionArg, ...valueArgs];
 
-        this.log(`\nhelm ${helmArgs}`)
+        // this.log(`\nhelm ${helmArgs}`)
 
-        const result = await $`helm ${helmArgs}`.pipe(process.stdout)
+        this.log("Running helm command...")
+        try {
+            $.verbose = false;
+            const result = await $`helm ${helmArgs}`.pipe(process.stdout)
+            
+            this.log(`result: ${result}`)
+        } catch(e) {
+            const { exitCode, stdout, stderr } = e as ProcessOutput
 
-        this.log(`result: ${result}`)
+            this.log(`Helm command failed with error code ${exitCode}!`);
+            this.log(`${stdout}${stderr}`)
+        }
         
         // const { stdout, stderr } = await pExec(helmArgs);
         // console.log('stdout:', stdout);
