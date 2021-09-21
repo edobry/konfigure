@@ -1,16 +1,16 @@
-import * as fs from "fs";
+import * as fs from "fs-extra";
 import * as path from "path";
 import { Konfiguration } from "./konfiguration";
 
 import { TemplateTag, createTag, inlineArrayTransformer, splitStringTransformer, stripIndent, stripIndentTransformer, trimResultTransformer } from 'common-tags'
 
-export function readKonfig(envName: string) {
+export async function readKonfig(envName: string) {
     console.log("Reading konfiguration...");
 
     const currentDir = process.cwd();
     // const envName = path.basename(currentDir);
 
-    const konfigFile = fs.readFileSync(path.join(currentDir, `env/${envName}`, "konfig.json"), "UTF-8");
+    const konfigFile = await fs.readFile(path.join(currentDir, `env/${envName}`, "konfig.json"), { encoding: "UTF-8" });
     const konfig = JSON.parse(konfigFile);
 
     return new Konfiguration(envName, konfig);

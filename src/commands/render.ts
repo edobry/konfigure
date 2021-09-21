@@ -1,9 +1,15 @@
 import { Command, flags } from '@oclif/command'
 import * as tmp from "tmp-promise";
+import { $ } from 'zx'
+
+import { promisify } from "util";
+import { exec } from "child_process";
 
 import { commonFlags, envArg, instanceArg } from '../flags';
 import { Deployment, deploymentToString, Konfiguration } from '../konfiguration';
 import { readKonfig } from '../util';
+
+const pExec = promisify(exec);
 
 export default class Render extends Command {
     static description = "render instance manifests";
@@ -31,7 +37,7 @@ export default class Render extends Command {
 
         this.log("-- RENDER MODE --");
 
-        const konfig = readKonfig(argv[0]);
+        const konfig = await readKonfig(argv[0]);
         this.log(konfig.header())
         this.log()
 
@@ -56,7 +62,7 @@ export default class Render extends Command {
             this.renderDeployment(name, dep, envValues, konfig));
     }
 
-    renderDeployment(name: string, dep: Deployment, envValues: object, konfig: Konfiguration): void {
+    async renderDeployment(name: string, dep: Deployment, envValues: object, konfig: Konfiguration) {
         this.log(`\nRendering ${name}...`)
         // this.log(deploymentToString(name, dep));
 
@@ -74,15 +80,24 @@ export default class Render extends Command {
             ...values.map(writeValueFile)
         ];
 
-        const valueArgs = valueFiles.map(x => `-f ${x}`).join(' ')
+        const valueArgs = valueFiles.map(x => ["-f", x]).flat()
 
         const versionArg = !dep.version ? '' : `--version=${dep.version} `
         
         const chartArg = dep.source == "local" ? dep.chart : `fimbulvetr/${dep.chart}`
 
-        const helmCommand = `helm template ${name} ${chartArg} ${versionArg}${valueArgs}`
+        const helmArgs = ["template", name, chartArg, versionArg, ...valueArgs]
 
-        this.log(`\n${helmCommand}`)
+        this.log(`\nhelm ${helmArgs}`)
+
+        const result = await $`helm ${helmArgs}`.pipe(process.stdout)
+
+        this.log(`result: ${result}`)
+        
+        // const { stdout, stderr } = await pExec(helmArgs);
+        // console.log('stdout:', stdout);
+        // console.log('stderr:', stderr);
+
     }
 }
 

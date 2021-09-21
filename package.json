@@ -8,7 +8,7 @@
   "bugs": "https://github.com/chainalysis/konfigure/issues",
   "devDependencies": {
     "@oclif/dev-cli": "^1.26.0",
-    "@types/node": "^10.17.60",
+    "@types/node": "^16.9.5",
     "@types/tmp": "^0.2.1",
     "eslint": "^5.16.0",
     "eslint-config-oclif": "^3.1.0",
@@ -54,8 +54,10 @@
     "@oclif/plugin-help": "^3.2.3",
     "@types/common-tags": "^1.8.1",
     "common-tags": "^1.8.0",
+    "fs-extra": "^10.0.0",
     "tmp": "^0.2.1",
     "tmp-promise": "^3.0.2",
-    "tslib": "^1.14.1"
+    "tslib": "^1.14.1",
+    "zx": "^4.2.0"
   }
 }
