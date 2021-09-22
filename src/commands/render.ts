@@ -1,13 +1,14 @@
 import { Command, flags } from '@oclif/command'
 import * as tmp from "tmp-promise";
+import * as fs from "fs-extra";
 import { $, ProcessOutput } from 'zx'
 
 import { promisify } from "util";
 import { exec } from "child_process";
 
 import { commonFlags, envArg, instanceArg } from '../flags';
-import { Deployment, deploymentToString, Konfiguration } from '../konfiguration';
-import { readKonfig } from '../util';
+import { Deployment, deploymentToString, Konfiguration, ValuesMap } from '../konfiguration';
+import { } from '../util';
 
 const pExec = promisify(exec);
 
@@ -37,7 +38,7 @@ export default class Render extends Command {
 
         this.log("-- RENDER MODE --");
 
-        const konfig = await readKonfig(argv[0]);
+        const konfig = await Konfiguration.read(argv[0]);
         this.log(konfig.header())
         this.log()
 
@@ -62,7 +63,7 @@ export default class Render extends Command {
             this.renderDeployment(name, dep, envValues, konfig));
     }
 
-    async renderDeployment(name: string, dep: Deployment, envValues: object, konfig: Konfiguration) {
+    async renderDeployment(name: string, dep: Deployment, envValues: ValuesMap, konfig: Konfiguration) {
         this.log(`\nRendering ${name}...`)
         // this.log(deploymentToString(name, dep));
 
@@ -70,15 +71,33 @@ export default class Render extends Command {
 
         this.log(JSON.stringify(dep, null, 4))
 
-        const values: object[] = [
+        const chartDefaultValues = konfig.readChartDefaultValues(dep.chart);
+        const deploymentValues = konfig.readDeploymentValues(name);
+
+        // TODO: implement unit test
+        // precedence order
+        //
+        // chart default
+        //
+        // per env chart default (file)
+        // per env chart default (inline)
+        // deployment (file)
+        // deployment (inline)
+
+        const values: ValuesMap[] = [
+            envValues,
+            await chartDefaultValues,
             konfig.getChartDefaults(chart)?.values || {},
+            await deploymentValues,
             dep.values || {},
-            envValues
         ];
 
-        const valueFiles = [
-            ...values.map(writeValueFile)
-        ];
+        this.debug("Writing values files...")
+        const valueFiles = await Promise.all([
+            ...values
+                .filter(x => Object.keys(x).length !== 0)
+                .map(writeValueFile)
+        ]);
 
         const valueArgs = valueFiles.map(x => ["-f", x]).flat()
 
@@ -110,12 +129,13 @@ export default class Render extends Command {
     }
 }
 
-function writeValueFile(values: object) {
-    return tmp.tmpNameSync({ template: 'tmp-XXXXXX.json' })
+async function writeValueFile(values: object) {
+    const { fd, path, cleanup } = await tmp.file({ template: 'tmp-XXXXXX.json' });
+
+    console.debug(`Writing values file ${path}...`)
+    console.debug(values)
+
+    const { bytesWritten, buffer } = await fs.write(fd, Buffer.from(JSON.stringify(values)))
+
+    return path;
 }
-
-// async function writeValueFile(values: object) {
-//     const { fd, path, cleanup } = await tmp.file();
-
-//     return
-// }

@@ -1,5 +1,8 @@
+import * as fs from "fs-extra";
+import * as path from "path";
+
 import { stripIndents, codeBlock } from 'common-tags'
-import { pretty, printArgs } from './util';
+import { pretty, printArgs, readOptionalFile } from './util';
 
 type DeploymentMap = { [index: string]: Deployment };
 
@@ -41,7 +44,7 @@ interface ExternalResources {
     deployments:  { [index: string]: ExternalResource }
 }
 
-type ValuesMap = { [index: string]: string | number | ValuesMap };
+export type ValuesMap = { [index: string]: string | number | ValuesMap };
 
 interface ExternalResource {
     service: {
@@ -77,12 +80,40 @@ function mergeChartDefaults(deployments: DeploymentMap, defaults: DeploymentMap)
 export class Konfiguration {
     private deployments: DeploymentMap;
 
-    constructor(public name: string, private konfig: KonfigProps) {
+    constructor(public name: string, private envDir: string, private konfig: KonfigProps) {
         this.deployments = {
             ...mergeChartDefaults(konfig.deployments, konfig.chartDefaults),
             ...parseExternalResources(konfig.externalResources)
         }
     }
+    
+    static async read(envName: string) {
+        console.log("Reading konfiguration...");
+
+        const currentDir = process.cwd();
+        const envDir = path.join(currentDir, `env/${envName}`);
+
+        const konfigFile = await fs.readFile(path.join(envDir, "konfig.json"), { encoding: "UTF-8" });
+        const konfig = JSON.parse(konfigFile);
+
+        return new Konfiguration(envName, envDir, konfig);
+    }
+
+    async readChartDefaultValues(chart: string) {
+        return readOptionalFile(path.join(this.envDir, `chartDefaults/${chart}.yaml`));
+    }
+
+    async readDeploymentValues(deployment: string) {
+        return readOptionalFile(path.join(this.envDir, `deployments/${deployment}.yaml`));
+    }
+
+    // TODO: implement?
+    // async readExternalResourceValues(resource: string) {
+    //     const deploymentValuesFile = await fs.readFile(path.join(this.envDir, `deployments/${deployment}.yaml`), { encoding: "UTF-8" });
+    //     const deploymentValues = JSON.parse(deploymentValuesFile);
+
+    //     return deploymentValues;
+    // }
 
     get environment() {
         return this.konfig.environment;

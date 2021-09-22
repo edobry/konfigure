@@ -1,20 +1,10 @@
 import * as fs from "fs-extra";
 import * as path from "path";
-import { Konfiguration } from "./konfiguration";
+import * as yaml from "js-yaml";
+
 
 import { TemplateTag, createTag, inlineArrayTransformer, splitStringTransformer, stripIndent, stripIndentTransformer, trimResultTransformer } from 'common-tags'
-
-export async function readKonfig(envName: string) {
-    console.log("Reading konfiguration...");
-
-    const currentDir = process.cwd();
-    // const envName = path.basename(currentDir);
-
-    const konfigFile = await fs.readFile(path.join(currentDir, `env/${envName}`, "konfig.json"), { encoding: "UTF-8" });
-    const konfig = JSON.parse(konfigFile);
-
-    return new Konfiguration(envName, konfig);
-}
+import { ValuesMap } from "./konfiguration";
 
 export const pretty = new TemplateTag(
     stripIndentTransformer("initial"),
@@ -71,4 +61,26 @@ function printArgsInternal(args: [string, KonfigValue][]) {
 }
 export function printArgs(args: { [index: string]: KonfigValue }) {
     return printArgsInternal(Object.entries(args));
+}
+
+export async function readOptionalFile(filePath: string): Promise<ValuesMap> {
+    let fileContents;
+    try {
+        fileContents = await fs.readFile(filePath, { encoding: "UTF-8" });
+    } catch(e) {
+        // console.trace(`Could not read file ${filePath}!`);
+        return {};
+    }
+    
+    const extension = path.extname(filePath);
+
+    switch(extension) {
+        case ".json":
+            return JSON.parse(fileContents);
+        case ".yaml":
+            return yaml.load(fileContents) as ValuesMap;
+        default:
+            throw new Error(
+                `Invalid filepath '${filePath}' provided for values file; extension must be .yaml or .json!`);
+    }
 }
