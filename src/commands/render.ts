@@ -108,10 +108,14 @@ export default class Render extends Command {
 
         this.log("Running helm command...")
         try {
-            $.verbose = false;
-            const result = await $`helm ${helmArgs}`.pipe(process.stdout)
-            
-            this.log(`result: ${result}`)
+            if(dryrun)
+                console.log(`helm ${helmArgs}`);
+            else {
+                $.verbose = false;
+                const result = await $`helm ${helmArgs}`.pipe(process.stdout)
+                
+                this.log(`result: ${result}`)
+            }
         } catch(e) {
             const { exitCode, stdout, stderr } = e as ProcessOutput
 
