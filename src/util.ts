@@ -1,7 +1,8 @@
 import * as fs from "fs-extra";
 import * as path from "path";
 import * as yaml from "js-yaml";
-
+import * as chalk from "chalk";
+import highlight, { Theme } from "cli-highlight";
 
 import { TemplateTag, createTag, inlineArrayTransformer, splitStringTransformer, stripIndent, stripIndentTransformer, trimResultTransformer } from 'common-tags'
 import { ValuesMap } from "./konfiguration";
@@ -83,4 +84,63 @@ export async function readOptionalFile(filePath: string): Promise<ValuesMap> {
             throw new Error(
                 `Invalid filepath '${filePath}' provided for values file; extension must be .yaml or .json!`);
     }
+}
+
+const offwhite = chalk.hex("#e0e2e4");
+const green = chalk.hex("#93c763");
+const orange = chalk.hex("#d39745");
+const pumpkin = chalk.hex("#ec7600");
+const teal = chalk.hex("#8cbbad");
+const gray = chalk.hex("#818e96");
+
+const obsidianTheme: Theme = {
+    default: offwhite,
+
+    keyword: green.bold,
+    "selector-tag": green.bold,
+    literal: green.bold,
+    "selector-id": green,
+    
+    number: chalk.hex("#ffcd22"),
+    
+    attribute: chalk.hex("#668bb0"),
+    
+    regexp: orange,
+    link: orange,
+    
+    meta: chalk.hex("#557182"),
+
+    tag: teal,
+    name: teal.bold,
+    bullet: teal,
+    subst: teal,
+    emphasis: teal,
+    type: teal.bold,
+    built_in: teal,
+    "selector-attr": teal,
+    "selector-pseudo": teal,
+    addition: teal,
+    variable: teal,
+    "template-tag": teal,
+    "template-variable": teal,
+
+    string: pumpkin,
+    symbol: pumpkin,
+
+    comment: gray,
+    quote: gray,
+    deletion: gray,
+
+    "selector-class": chalk.hex("#A082BD"),
+
+    doctag: offwhite.bold,
+
+    code: chalk.white,
+    class: chalk.white,
+    title: chalk.white.bold,
+    section: chalk.white.bold
+};
+
+export function prettyPrintYaml(values: object): string {
+    return highlight(yaml.dump(values), { language: "yaml", theme: obsidianTheme })
 }

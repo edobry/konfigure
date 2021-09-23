@@ -3,14 +3,11 @@ import * as tmp from "tmp-promise";
 import * as fs from "fs-extra";
 import { $, ProcessOutput } from 'zx'
 
-import { promisify } from "util";
-import { exec } from "child_process";
+import { commonFlags, dryrun, envArg, instanceArg } from '../flags';
+import { Deployment, Konfiguration, ValuesMap } from '../konfiguration';
+import { prettyPrintYaml } from '../util';
 
-import { commonFlags, envArg, instanceArg } from '../flags';
-import { Deployment, deploymentToString, Konfiguration, ValuesMap } from '../konfiguration';
-import { } from '../util';
-
-const pExec = promisify(exec);
+// adapted from https://github.com/highlightjs/highlight.js/blob/main/src/styles/obsidian.css
 
 export default class Render extends Command {
     static description = "render instance manifests";
@@ -57,7 +54,7 @@ export default class Render extends Command {
             }
         };
 
-        this.log(JSON.stringify(envValues, null, 4))
+        this.log(prettyPrintYaml(envValues));
 
         deployments.forEach(([name, dep]) =>
             this.renderDeployment(name, dep, envValues, konfig));
@@ -69,7 +66,7 @@ export default class Render extends Command {
 
         const { chart } = dep;
 
-        this.log(JSON.stringify(dep, null, 4))
+        this.log(prettyPrintYaml(dep))
 
         const chartDefaultValues = konfig.readChartDefaultValues(dep.chart);
         const deploymentValues = konfig.readDeploymentValues(name);
@@ -133,7 +130,7 @@ async function writeValueFile(values: object) {
     const { fd, path, cleanup } = await tmp.file({ template: 'tmp-XXXXXX.json' });
 
     console.debug(`Writing values file ${path}...`)
-    console.debug(values)
+    console.log(prettyPrintYaml(values));
 
     const { bytesWritten, buffer } = await fs.write(fd, Buffer.from(JSON.stringify(values)))
 
