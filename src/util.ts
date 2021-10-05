@@ -6,6 +6,9 @@ import highlight, { Theme } from "cli-highlight";
 
 import { TemplateTag, createTag, inlineArrayTransformer, splitStringTransformer, stripIndent, stripIndentTransformer, trimResultTransformer } from 'common-tags'
 import { ValuesMap } from "./konfiguration";
+import { Flags } from "./flags";
+import Command from "@oclif/command";
+import { CommandInput } from "./common";
 
 export const pretty = new TemplateTag(
     stripIndentTransformer("initial"),
@@ -93,6 +96,7 @@ const pumpkin = chalk.hex("#ec7600");
 const teal = chalk.hex("#8cbbad");
 const gray = chalk.hex("#818e96");
 
+// adapted from https://github.com/highlightjs/highlight.js/blob/main/src/styles/obsidian.css
 const obsidianTheme: Theme = {
     default: offwhite,
 
@@ -143,4 +147,17 @@ const obsidianTheme: Theme = {
 
 export function prettyPrintYaml(values: object): string {
     return highlight(yaml.dump(values), { language: "yaml", theme: obsidianTheme })
+}
+
+export const printMode = ({ flags: { dryrun, testing, auth, debug } }: CommandInput, test: any) => {
+    if(dryrun)
+        console.log("-- DRYRUN MODE --")
+    if(testing)
+        console.log("-- TESTING MODE --")
+    if(auth)
+        console.log("-- AUTH MODE --")
+    if(debug)
+        console.log("-- DEBUG MODE --")
+
+    console.log(`-- ${test.name.toUpperCase()} MODE --`);
 }
