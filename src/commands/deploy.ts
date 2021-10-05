@@ -1,44 +1,28 @@
-import { Command, flags } from '@oclif/command'
-import { commonFlags } from '../flags';
-import { processInstances } from '../util';
+import Command from '@oclif/command'
+
+import { commonArgs, commonFlags } from '../flags';
+import { printMode } from '../util';
+import { initEnv, processDeployments } from '../common';
 
 export default class Deploy extends Command {
-  static description = "deploy instances to the current environment";
+    static description = "deploy instances to the current environment";
+    static strict = false
 
-//   static examples = [
-//     `$ konfigure hello
-// hello world from ./src/hello.ts!
-// `,
-//   ]
+    static flags = {
+       ...commonFlags
+    }
+    
+    static args = [
+        ...commonArgs
+    ];
 
-  static flags = {
-    help: flags.help({ char: 'h' }),
-    ...commonFlags
-  }
-  
-  static strict = false
-  static args = [{
-    name: "instances",
-    description:  "the instances to deploy",
-    required: true
-  }]
+    async run() {
+        const input = this.parse(Deploy);
 
-  async run() {
-    const { argv, flags: {
-      dryrun, testing, auth, debug
-    }} = this.parse(Deploy)
+        printMode(input, this.constructor);
 
-    this.log("deploy command");
-
-    if(dryrun)
-      this.log("-- DRYRUN MODE --")
-    if(testing)
-      this.log("-- TESTING MODE --")
-    if(auth)
-      this.log("-- AUTH MODE --")
-    if(debug)
-      this.log("-- DEBUG MODE --")
-
-    processInstances(argv)
-  }
+        const konfig = await initEnv(input);
+        await processDeployments(input, konfig,
+            chart => chart.deploy());
+    }
 }
