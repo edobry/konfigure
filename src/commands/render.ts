@@ -21,8 +21,11 @@ export default class Render extends Command {
 
         printMode(input, this.constructor);
 
-        const konfig = await initEnv(input);
-        await processDeployments(input, konfig,
+        const env = await initEnv(input);
+        await processDeployments(input, env,
             chart => chart.render());
+
+        const output = await env.shell.close();
+        // console.log(output);
     }
 }

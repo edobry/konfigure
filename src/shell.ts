@@ -1,4 +1,5 @@
-import { spawn } from "child_process";
+import { ChildProcessByStdio, spawn } from "child_process";
+import internal = require("stream");
 import { readOptionalFile } from "./util";
 
 // adapted from https://github.com/joshuatz/nodejs-child-process-testing/blob/main/persistent-shell.js
@@ -8,12 +9,17 @@ type CommandResult = {
     exitcode: number,
     output: string,
 };
+export type Shell = {
+    childShell: ChildProcessByStdio<internal.Writable, internal.Readable, null>,
+    runCommand: ShellCommand,
+    close: () => Promise<string>
+}
 export type ShellCommand = (command: string) => Promise<CommandResult>;
 
 const TERMINATOR = "EOF";
 const TERMINATOR_CHUNK = `${TERMINATOR}\n`;
 
-export async function initShell() {
+export async function initShell(): Promise<Shell> {
     const shell = process.env.SHELL;
     if(!shell)
         throw new Error("$SHELL not defined!");
@@ -60,7 +66,7 @@ export async function initShell() {
         errorListeners.forEach((f) => f(err));
     });
 
-    const shellClose = new Promise((res, rej) => {
+    const shellClose = new Promise<string>((res, rej) => {
         exitListeners.push(res);
         errorListeners.push(rej);
     });
@@ -97,8 +103,10 @@ export async function initShell() {
     return {
         childShell,
         runCommand,
-        shellClose,
-        exit: () => childShell.stdin.end(),
+        close: () => {
+            childShell.stdin.end();
+            return shellClose;
+        }
     };
 };
 

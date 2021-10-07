@@ -3,15 +3,15 @@ import { prettyPrintYaml } from "./util";
 
 import * as tmp from "tmp-promise";
 import * as fs from "fs-extra";
-import { $, ProcessOutput } from 'zx'
 import { Flags } from "./flags";
-import { CommandInput } from "./common";
+import { CommandInput, Environment } from "./common";
+import { Shell } from "./shell";
 
 export class HelmChart {
     private versionArg: string;
     private chartArg: string;
 
-    constructor(private name: string, private dep: Deployment, private envValues: ValuesMap, private konfig: Konfiguration, private input: CommandInput) {
+    constructor(private name: string, private dep: Deployment, private envValues: ValuesMap, private env: Environment, private input: CommandInput) {
         const { chart, version, source } = dep;
 
         console.log(prettyPrintYaml(dep))
@@ -25,18 +25,16 @@ export class HelmChart {
         const helmArgs = [command, ...args, this.name, this.chartArg, this.versionArg, ...valueArgs];
 
         console.log("Running helm command...")
-        try {
-            if(this.input.flags.dryrun)
-                console.log(`helm ${helmArgs.join(' ')}`);
-            else {
-                $.verbose = false;
-                const result = await $`helm ${helmArgs}`.pipe(process.stdout)                
-            }
-        } catch(e) {
-            const { exitCode, stdout, stderr } = e as ProcessOutput
+        if(this.input.flags.dryrun) {
+            console.log(`helm ${helmArgs.join(' ')}`);
+            return;
+        }
 
-            console.log(`Helm command failed with error code ${exitCode}!`);
-            console.log(`${stdout}${stderr}`)
+        const { exitcode, output } = await this.env.shell.runCommand(`helm ${helmArgs.join(' ')}`);
+        
+        if(exitcode != 0) {
+            console.log(`Helm command failed with error code ${exitcode}!`);
+            console.log(`${output}`)
         }
     }
 
@@ -58,8 +56,8 @@ export class HelmChart {
     }
 
     async prepareValues() {
-        const chartDefaultValues = this.konfig.readChartDefaultValues(this.dep.chart);
-        const deploymentValues = this.konfig.readDeploymentValues(this.name);
+        const chartDefaultValues = this.env.konfig.readChartDefaultValues(this.dep.chart);
+        const deploymentValues = this.env.konfig.readDeploymentValues(this.name);
 
         // TODO: implement unit test
         // precedence order
@@ -74,7 +72,7 @@ export class HelmChart {
         const values: ValuesMap[] = [
             this.envValues,
             await chartDefaultValues,
-            this.konfig.getChartDefaults(this.dep.chart)?.values || {},
+            this.env.konfig.getChartDefaults(this.dep.chart)?.values || {},
             await deploymentValues,
             this.dep.values || {},
         ];
