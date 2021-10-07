@@ -1,26 +1,8 @@
 import { Flags } from "./flags";
 import { Konfiguration } from "./konfiguration";
-import { prettyPrintYaml, readOptionalFile } from "./util";
+import { prettyPrintYaml } from "./util";
 import { HelmChart } from "./helm";
-import { $, ProcessOutput } from "zx";
-import envPaths from "env-paths";
-import { getSystemErrorMap } from "util";
-
-async function initZx() {
-    $.verbose = false;
-
-    if(process.env.SHELL)
-        $.shell = process.env.SHELL;
-
-    const configDir = process.env.XDG_CONFIG_HOME || `${process.env.HOME || "~/"}/.config`;
-    const dtConfigFile = `${configDir}/dataeng-tools/config.json`;
-
-    const dtConfig = await readOptionalFile(dtConfigFile);
-    // console.debug(prettyPrintYaml(dtConfig))
-    const projectDir = dtConfig.projectDir
-
-    $.prefix = `source ${projectDir}/dataeng-tools/shell/init.sh; `
-}
+import { initDtShell, ShellCommand } from "./shell";
 
 export interface CommandInput {
     flags: Flags;
@@ -33,26 +15,33 @@ export async function initEnv({ argv, flags }: CommandInput) {
     console.log(konfig.header())
     console.log()
 
-    await initZx();
-    await handleAuth(flags, konfig)
+    const { childShell, runCommand, exit, shellClose } = await initDtShell();
+    await handleAuth(flags, konfig, runCommand);
+
+    exit();
+    const output = await shellClose;
+    // console.log("output")
+    // console.log(output)
 
     return konfig;
 };
 
-async function handleAuth(flags: Flags, konfig: Konfiguration) {
+
+async function handleAuth(flags: Flags, konfig: Konfiguration, runCommand: ShellCommand) {
     const account = konfig.environment.awsAccount;
     const accountRole = "admin"
-    if(flags.auth)
-        await $`awsAuth ${account}-${accountRole}`.pipe(process.stdout);
+    if(flags.auth) {
+        const { output } = await runCommand(`awsAuth ${account}-${accountRole}`)
+        console.log(output);
+    }
     
-    try {
-        await $`checkAccountAuthAndFail ${account}`
-    } catch (e) {
-        const { stdout } = e as ProcessOutput;
-        console.log(stdout);
+    const { exitcode, output } = await runCommand(`checkAccountAuthAndFail ${account}`);
+        
+    if(exitcode != 0) {
+        console.log(output);
         process.exit(1);
     }
-}
+};
 
 export async function processDeployments(input: CommandInput, konfig: Konfiguration, chartHandler: (chart: HelmChart) => Promise<void>) {
     const deployments = konfig.filterDeployments(input.argv.slice(1));
