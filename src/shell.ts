@@ -50,7 +50,7 @@ export async function initShell(): Promise<Shell> {
         // console.log(`data end: ${data.codePointAt(data.length-1)}`)
         // chunks.push(data);
         // dataListeners.forEach(f => f(data));
-    });
+    }).pipe(process.stdout);
 
     childShell.on("exit", (exitCode) => {
         // console.log(`exit: ${exitCode}`)

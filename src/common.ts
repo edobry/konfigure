@@ -44,17 +44,13 @@ export async function initEnv({ argv, flags }: CommandInput): Promise<Environmen
 async function handleAuth(flags: Flags, konfig: Konfiguration, runCommand: ShellCommand) {
     const account = konfig.environment.awsAccount;
     const accountRole = "admin"
-    if(flags.auth) {
-        const { output } = await runCommand(`awsAuth ${account}-${accountRole}`)
-        console.log(output);
-    }
+    if(flags.auth)
+        await runCommand(`awsAuth ${account}-${accountRole}`)
     
-    const { exitcode, output } = await runCommand(`checkAccountAuthAndFail ${account}`);
+    const { exitcode } = await runCommand(`checkAccountAuthAndFail ${account}`);
 
-    if(exitcode != 0) {
-        console.log(output);
+    if(exitcode != 0)
         process.exit(1);
-    }
 };
 
 export async function processDeployments(input: CommandInput, env: Environment, chartHandler: (chart: HelmChart) => Promise<void>) {
