@@ -15,7 +15,21 @@ export type Environment = {
 }
 
 export async function initEnv({ argv, flags }: CommandInput): Promise<Environment> {
-    const konfig = await Konfiguration.read(argv[0]);
+    const envName = argv[0];
+
+    let konfig;
+    try {
+        konfig = await Konfiguration.read(envName);
+    } catch (e) {
+        const { code } = e as Error & { code: "ENOENT" };
+        if(code == "ENOENT") {
+            console.log(`No konfiguration file found for the ${envName} environment!`)
+        } else {
+            console.error(e);
+        }
+
+        process.exit(1);
+    }
 
     console.log(konfig.header())
     console.log()
