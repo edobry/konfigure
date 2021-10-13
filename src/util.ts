@@ -68,17 +68,17 @@ export function printArgs(args: { [index: string]: KonfigValue }) {
 }
 
 export async function readOptionalFile(filePath: string): Promise<ValuesMap> {
-    let fileContents;
     try {
-        fileContents = await fs.readFile(filePath, { encoding: "UTF-8" });
+        return await readFile(filePath);
     } catch(e) {
-        // console.trace(`Could not read file ${filePath}!`);
         return {};
     }
-    
-    const extension = path.extname(filePath);
+}
 
-    switch(extension) {
+export async function readFile(filePath: string): Promise<ValuesMap> {
+    const fileContents = await fs.readFile(filePath, { encoding: "UTF-8" });
+    
+    switch(path.extname(filePath)) {
         case ".json":
             return JSON.parse(fileContents);
         case ".yaml":

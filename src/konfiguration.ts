@@ -2,7 +2,7 @@ import * as fs from "fs-extra";
 import * as path from "path";
 
 import { stripIndents, codeBlock } from 'common-tags'
-import { pretty, printArgs, readOptionalFile } from './util';
+import { pretty, printArgs, readFile, readOptionalFile } from './util';
 
 type DeploymentMap = { [index: string]: Deployment };
 
@@ -93,10 +93,9 @@ export class Konfiguration {
         const currentDir = process.cwd();
         const envDir = path.join(currentDir, `env/${envName}`);
 
-        const konfigFile = await fs.readFile(path.join(envDir, "konfig.json"), { encoding: "UTF-8" });
-        const konfig = JSON.parse(konfigFile);
-
-        return new Konfiguration(envName, envDir, konfig);
+        const konfig = await readFile(path.join(envDir, "konfig.json"));
+        // TODO: implement file schema validation
+        return new Konfiguration(envName, envDir, konfig as unknown as KonfigProps);
     }
 
     async readChartDefaultValues(chart: string) {
