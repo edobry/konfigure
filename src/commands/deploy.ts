@@ -25,7 +25,6 @@ export default class Deploy extends Command {
         await processDeployments(input, env,
             chart => chart.deploy());
 
-        const output = await env.shell.close();
-        // console.log(output);
+        await env.shell.close();
     }
 }

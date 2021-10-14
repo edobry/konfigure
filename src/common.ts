@@ -2,17 +2,17 @@ import { Flags } from "./flags";
 import { Konfiguration } from "./konfiguration";
 import { prettyPrintYaml } from "./util";
 import { HelmChart } from "./helm";
-import { initDtShell, Shell, ShellCommand } from "./shell";
+import { initDtShell, InteractiveShell } from "./shell";
 
 export interface CommandInput {
     flags: Flags;
     argv: string[];
-}
+};
 
 export type Environment = {
     konfig: Konfiguration,
-    shell: Shell
-}
+    shell: InteractiveShell
+};
 
 export async function initEnv({ argv, flags }: CommandInput): Promise<Environment> {
     const envName = argv[0];
@@ -35,23 +35,40 @@ export async function initEnv({ argv, flags }: CommandInput): Promise<Environmen
     console.log()
 
     const shell = await initDtShell();
-    await handleAuth(flags, konfig, shell.runCommand);
+    await handleAuth(flags, konfig, shell);
 
     return { konfig, shell };
 };
 
 
-async function handleAuth(flags: Flags, konfig: Konfiguration, runCommand: ShellCommand) {
+async function handleAuth(flags: Flags, konfig: Konfiguration, shell: InteractiveShell) {
     const account = konfig.environment.awsAccount;
     const accountRole = "admin"
-    if(flags.auth)
-        await runCommand(`awsAuth ${account}-${accountRole}`)
+    const profile = `${account}-${accountRole}`;
     
-    const { exitcode } = await runCommand(`checkAccountAuthAndFail ${account}`);
+    console.log("Checking authentication...")
+    try {
+        if(flags.auth) {
+            await shell.runCommand(`awsAuth ${profile}`)
+            process.env.AWS_PROFILE = profile;
+        }
 
-    if(exitcode != 0)
-        process.exit(1);
+        const { exitcode } = await shell.runCommand(`checkAccountAuthAndFail ${account}`);
+    }
+    catch(e) {
+        process.exit(1)
+    }
 };
+
+// async function checkAuth(account: string) {
+//     try {
+//         const id = await $`aws sts get-caller-identity`
+//         id.stdout
+//     } catch(e) {
+//         console.log("Unauthenticated! Please authenticate with AWS before rerunning.")
+//         process.exit(1);
+//     }
+// }
 
 export async function processDeployments(input: CommandInput, env: Environment, chartHandler: (chart: HelmChart) => Promise<void>) {
     const deployments = env.konfig.filterDeployments(input.argv.slice(1));
