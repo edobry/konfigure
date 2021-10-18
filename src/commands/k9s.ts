@@ -3,7 +3,7 @@ import Command from '@oclif/command'
 import { commonArgs, commonFlags } from '../flags';
 import { printMode } from '../util';
 import { initEnv } from '../common';
-import { runDtCommand } from '../shell';
+import { runCommand, runDtCommand } from '../shell';
 
 export default class K9s extends Command {
     static description = "launch k9s in the current environment";
@@ -21,9 +21,11 @@ export default class K9s extends Command {
         const input = this.parse(K9s);
         printMode(input, this.constructor);
         const env = await initEnv(input);
-        env.shell.close();
+        await env.shell.close();
 
         const { awsAccount, k8sContext, k8sNamespace } = env.konfig.environment;
-        await runDtCommand(`k9sEnv ${awsAccount}-admin ${k8sContext} ${k8sNamespace}`);
+
+        console.log(`Launching K9s in context '${k8sContext}', namespace '${k8sNamespace}'`);
+        await runDtCommand(`k9s --context "${k8sContext}" --namespace "${k8sNamespace}" -c deployments`);
     }
 }

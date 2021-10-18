@@ -54,6 +54,9 @@ async function handleAuth(flags: Flags, konfig: Konfiguration, shell: Interactiv
         }
 
         const { exitcode } = await shell.runCommand(`checkAccountAuthAndFail ${account}`);
+        // console.debug(`check exit code: ${exitcode}`)
+        if(exitcode != 0)
+            process.exit(1);
     }
     catch(e) {
         process.exit(1)
