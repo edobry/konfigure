@@ -1,4 +1,4 @@
-import { ChildProcessByStdio, spawn } from "child_process";
+import { ChildProcessByStdio, CommonOptions, spawn, SpawnOptionsWithoutStdio } from "child_process";
 import internal = require("stream");
 import { readOptionalFile } from "./util";
 
@@ -11,31 +11,24 @@ type CommandResult = {
     output: string,
 };
 export type Shell = {
+    chunks: string[],
     childShell: ChildProcessByStdio<internal.Writable, internal.Readable, internal.Readable>,
     // runCommand: ShellCommand,
-    close: () => Promise<string>,
+    close: () => Promise<CommandResult>,
+}
+export type ControllableShell = Shell & {
     onData: (listener: Consumer<string>) => number
     onControl: (listener: Consumer<string>) => number
     unsubData: (id: number) => void,
     unsubControl: (id: number) => void
-}
+};
 export type ShellCommand = (command: string, options?: { pipeInput: boolean }) => Promise<CommandResult>;
 
 const TERMINATOR = "EOF";
 const TERMINATOR_CHUNK = `${TERMINATOR}\n`;
 
-export async function initShell(options?: { persist: boolean }): Promise<Shell> {
-    // TODO: make configurable
-    const shell = "bash"; //process.env.SHELL;
-    if(!shell)
-        throw new Error("$SHELL not defined!");
-
-    console.debug("launching child shell...")
-    const childShell = spawn(shell, [], {
-        stdio: "pipe"
-    });
-
-    const chunks: string[] = [];
+export async function initControllableShell(options?: { command: string }): Promise<ControllableShell> {
+    const shell = await initShell(options);
 
     let latestDataId = 0;
     let latestControlId = 0;
@@ -46,45 +39,85 @@ export async function initShell(options?: { persist: boolean }): Promise<Shell> 
         [index: string]: Consumer<string>,
     } = {};
 
-    const exitListeners: ConsumerList<string> = [];
-    const errorListeners: ConsumerList<string | Error> = [];
+    const onData = (listener: Consumer<string>): number => {
+        const id = ++latestDataId;
+        dataListeners[id] = listener;
+        return id;
+    };
+    const unsubData = (id: number) => {
+        delete dataListeners[id];
+    };
+    const unsubControl = (id: number) => {
+        delete controlListeners[id];
+    };
+    const onControl = (listener: Consumer<string>): number => {
+        const id = ++latestControlId;
+        controlListeners[id] = listener;
+        return id;
+    };
 
-    childShell.stdout.on("data", (data) => {
+    shell.childShell.stdout.on("data", (data) => {
         const chunk: string = data.toString();
-
-        chunks.push(chunk);
-
-        Object.values(dataListeners).forEach(f => f(chunk));
+        Object.values(dataListeners)
+            .forEach(f => f(chunk));
 
         // console.log(`data: ${data}`)
         // console.log(`data length: ${data.length}`)
         // console.log(`data end: ${data.codePointAt(data.length-1)}`)
-        // chunks.push(data);
+        // shell.chunks.push(data);
         // dataListeners.forEach(f => f(data));
     }).pipe(process.stdout);
+    onData(x => shell.chunks.push(x));
 
-    childShell.stderr.on("data", (data) => {
+    shell.childShell.stderr.on("data", (data) => {
         const chunk: string = data.toString();
-
-        chunks.push(chunk);
-
-        Object.values(controlListeners).forEach(f => f(chunk));
+        Object.values(controlListeners)
+            .forEach(f => f(chunk));
 
         // console.log(`data: ${data}`)
         // console.log(`data length: ${data.length}`)
         // console.log(`data end: ${data.codePointAt(data.length-1)}`)
-        // chunks.push(data);
+        // shell.chunks.push(data);
         // dataListeners.forEach(f => f(data));
-    })
+    });
+    // onControl(x => shell.chunks.push(x));
 
-    childShell.on("close", (exitCode) => {
-        // console.log(`exit: ${exitCode}`);
+    return {
+        ...shell,
+        onData,
+        unsubData,
+        unsubControl,
+        onControl
+    }
+}
+export async function initShell(options?: { command: string }): Promise<Shell> {
+    // TODO: make configurable
+    const shell = "bash"; //process.env.SHELL;
+    if(!shell)
+        throw new Error("$SHELL not defined!");
 
-        (exitCode == 0
+    const shellOptions: SpawnOptionsWithoutStdio = {
+        stdio: "pipe"
+    };
+    if(options?.command)
+        shellOptions.shell = shell;
+    
+    console.debug("launching child shell...")
+    const childShell = spawn(options?.command || shell, [], shellOptions);
+
+    const chunks: string[] = [];
+
+    const exitListeners: ConsumerList<CommandResult> = [];
+    const errorListeners: ConsumerList<CommandResult | Error> = [];
+
+    childShell.on("close", (exitcode: number) => {
+        // console.log(`exit: ${exitcode}`);
+
+        (exitcode == 0
             ? exitListeners
             : errorListeners
         ).forEach((f) =>
-            f(chunks.join(''))
+            f({ exitcode, output: chunks.join('') })
         );
     });
 
@@ -93,39 +126,24 @@ export async function initShell(options?: { persist: boolean }): Promise<Shell> 
 
         errorListeners.forEach((f) => f(err));
     });
-    const shellClose = new Promise<string>((res, rej) => {
+    const shellClose = new Promise<CommandResult>((res, rej) => {
         exitListeners.push(res);
         errorListeners.push(rej);
     });
 
     return {
+        chunks,
         childShell,
         close: () => {
             childShell.stdin.end();
             return shellClose;
-        },
-        onData: (listener: Consumer<string>): number => {
-            const id = ++latestDataId;
-            dataListeners[id] = listener;
-            return id;
-        },
-        unsubData: (id: number) => {
-            delete dataListeners[id];
-        },
-        unsubControl: (id: number) => {
-            delete controlListeners[id];
-        },
-        onControl: (listener: Consumer<string>): number => {
-            const id = ++latestControlId;
-            controlListeners[id] = listener;
-            return id;
         }
     };
 };
 
 export type InteractiveShell = Shell & { runCommand: ShellCommand };
 export async function initInteractiveShell(): Promise<InteractiveShell> {
-    const shell = await initShell();
+    const shell = await initControllableShell();
     
     return {
         runCommand: runInteractiveCommand(shell),
@@ -133,7 +151,7 @@ export async function initInteractiveShell(): Promise<InteractiveShell> {
     };
 }
 
-const runInteractiveCommand: (shell: Shell) => ShellCommand = (shell: Shell) => async (command: string, options?: { pipeInput: boolean }): Promise<CommandResult> => {
+const runInteractiveCommand: (shell: ControllableShell) => ShellCommand = (shell: ControllableShell) => async (command: string, options?: { pipeInput: boolean }): Promise<CommandResult> => {
     let commandDataChunks: string[] = [];
     let commandControlChunks: string[] = [];
 
