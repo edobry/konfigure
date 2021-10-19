@@ -1,6 +1,6 @@
-import { initEnv } from '../common';
+import { Environment } from '../common';
 import { runDtCommand } from '../shell';
-import BaseCommand from '../baseCommand';
+import BaseCommand, { CommandInput } from '../baseCommand';
 
 export default class K9s extends BaseCommand {
     static description = "launch k9s in the current environment";
@@ -9,12 +9,7 @@ export default class K9s extends BaseCommand {
     static flags = BaseCommand.flags;
     static args = BaseCommand.args;
 
-    async run(): Promise<void> {
-        this.printMode(this.input!, this.constructor);
-
-        const env = await initEnv(this.input!);
-        await env.shell.close();
-
+    async command(env: Environment, input: CommandInput<typeof K9s.flags>) {
         const { k8sContext, k8sNamespace } = env.konfig.environment;
 
         console.log(`Launching K9s in context '${k8sContext}', namespace '${k8sNamespace}'`);

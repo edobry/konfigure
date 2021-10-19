@@ -1,6 +1,6 @@
-import { initEnv } from '../common';
+import { Environment } from '../common';
 import { runCommand } from '../shell';
-import BaseCommand from '../baseCommand';
+import BaseCommand, { CommandInput } from '../baseCommand';
 
 export default class DebugPod extends BaseCommand {
     static description = "launch k9s in the current environment";
@@ -8,12 +8,8 @@ export default class DebugPod extends BaseCommand {
 
     static flags = BaseCommand.flags;
     static args = BaseCommand.args;
-    
-    async run() {
-        this.printMode(this.input!, this.constructor);
 
-        const env = await initEnv(this.input!);
-
+    async command(env: Environment, input: CommandInput<typeof DebugPod.flags>) {
         const { awsRegion } = env.konfig.environment
         await runCommand(`k8sDebugPod --az ${awsRegion}a`);
     }

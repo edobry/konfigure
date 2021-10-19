@@ -1,5 +1,5 @@
-import { initEnv, processDeployments } from '../common';
-import BaseCommand from '../baseCommand';
+import { Environment, processDeployments } from '../common';
+import BaseCommand, { CommandInput } from '../baseCommand';
 
 export default class Render extends BaseCommand {
     static description = "render instance manifests";
@@ -8,13 +8,8 @@ export default class Render extends BaseCommand {
     static flags = BaseCommand.flags;
     static args = BaseCommand.args;
 
-    async run() {
-        this.printMode(this.input!, this.constructor);
-
-        const env = await initEnv(this.input!);
-        await processDeployments(this.input!, env,
+    async command(env: Environment, input: CommandInput<typeof Render.flags>) {
+        await processDeployments(input, env,
             chart => chart.render());
-
-        await env.shell.close();
     }
 }

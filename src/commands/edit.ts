@@ -1,6 +1,6 @@
-import { initEnv } from '../common';
+import { Environment } from '../common';
 import { runCommand } from '../shell';
-import BaseCommand from '../baseCommand';
+import BaseCommand, { CommandInput } from '../baseCommand';
 
 export default class Edit extends BaseCommand {
     static description = "launch k9s in the current environment";
@@ -9,12 +9,7 @@ export default class Edit extends BaseCommand {
     static flags = BaseCommand.flags;
     static args = BaseCommand.args;
     
-    async run() {
-        this.printMode(this.input!, this.constructor);
-
-        const env = await initEnv(this.input!);
-        await env.shell.close();
-        
+    async command(env: Environment, input: CommandInput<typeof Edit.flags>) {
         console.log(`Opening konfig for environment '${env.konfig.name}' in editor...`)
         try {
             await runCommand(`$EDITOR env/${env.konfig.name}/konfig.json`);
