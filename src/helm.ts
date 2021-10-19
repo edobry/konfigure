@@ -1,17 +1,17 @@
-import { Deployment, Konfiguration, ValuesMap } from "./konfiguration";
+import { Deployment, ValuesMap } from "./konfiguration";
 import { prettyPrintYaml } from "./util";
+import { Flags } from "./flags";
+import { Environment } from "./common";
+import { CommandInput } from "./baseCommand";
 
 import * as tmp from "tmp-promise";
 import * as fs from "fs-extra";
-import { Flags } from "./flags";
-import { CommandInput, Environment } from "./common";
-import { Shell } from "./shell";
 
-export class HelmChart {
+export class HelmChart<T extends Flags> {
     private versionArg: string;
     private chartArg: string;
 
-    constructor(private name: string, private dep: Deployment, private envValues: ValuesMap, private env: Environment, private input: CommandInput) {
+    constructor(private name: string, private dep: Deployment, private envValues: ValuesMap, private env: Environment, private input: CommandInput<T>) {
         const { chart, version, source } = dep;
 
         console.log(prettyPrintYaml(dep))

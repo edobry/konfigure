@@ -4,11 +4,11 @@ import * as yaml from "js-yaml";
 import * as chalk from "chalk";
 import highlight, { Theme } from "cli-highlight";
 
-import { TemplateTag, createTag, inlineArrayTransformer, splitStringTransformer, stripIndent, stripIndentTransformer, trimResultTransformer } from 'common-tags'
+import { TemplateTag, inlineArrayTransformer, splitStringTransformer,
+    stripIndentTransformer, trimResultTransformer } from 'common-tags'
 import { ValuesMap } from "./konfiguration";
 import { Flags } from "./flags";
-import Command from "@oclif/command";
-import { CommandInput } from "./common";
+import { CommandInput } from "./baseCommand";
 
 export const pretty = new TemplateTag(
     stripIndentTransformer("initial"),
@@ -147,17 +147,4 @@ const obsidianTheme: Theme = {
 
 export function prettyPrintYaml(values: object): string {
     return highlight(yaml.dump(values), { language: "yaml", theme: obsidianTheme })
-}
-
-export const printMode = ({ flags: { dryrun, testing, auth, debug } }: CommandInput, test: any) => {
-    if(dryrun)
-        console.log("-- DRYRUN MODE --")
-    if(testing)
-        console.log("-- TESTING MODE --")
-    if(auth)
-        console.log("-- AUTH MODE --")
-    if(debug)
-        console.log("-- DEBUG MODE --")
-
-    console.log(`-- ${test.name.toUpperCase()} MODE --`);
 }

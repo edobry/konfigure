@@ -1,21 +1,18 @@
 import { Flags } from "./flags";
+import { CommandInput } from './baseCommand';
 import { Konfiguration } from "./konfiguration";
+import { initDtShell, InteractiveShell } from "./shell";
 import { prettyPrintYaml } from "./util";
 import { HelmChart } from "./helm";
-import { initDtShell, InteractiveShell } from "./shell";
-
-export interface CommandInput {
-    flags: Flags;
-    argv: string[];
-};
 
 export type Environment = {
     konfig: Konfiguration,
     shell: InteractiveShell
 };
 
-export async function initEnv({ argv, flags }: CommandInput): Promise<Environment> {
-    const envName = argv[0];
+export async function initEnv<T extends Flags>({ args, flags }: CommandInput<T>): Promise<Environment> {
+    if(!args) throw new Error();
+    const envName: string = args.environment;
 
     let konfig;
     try {
@@ -73,8 +70,8 @@ async function handleAuth(flags: Flags, konfig: Konfiguration, shell: Interactiv
 //     }
 // }
 
-export async function processDeployments(input: CommandInput, env: Environment, chartHandler: (chart: HelmChart) => Promise<void>) {
-    const deployments = env.konfig.filterDeployments(input.argv.slice(1));
+export async function processDeployments<T extends Flags>(input: CommandInput<T>, env: Environment, chartHandler: (chart: HelmChart<T>) => Promise<void>) {
+    const deployments = env.konfig.filterDeployments(input.args.slice(1));
 
     if(deployments.length == 0) {
         console.log("No deployments configured, nothing to do. Exiting!")

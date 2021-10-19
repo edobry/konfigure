@@ -1,24 +1,18 @@
-import Command from '@oclif/command'
-
-import { envArg, commonFlags } from '../flags';
-import { printMode } from '../util';
 import { initEnv } from '../common';
-import { runCommand, runDtCommand } from '../shell';
+import { runDtCommand } from '../shell';
+import BaseCommand from '../baseCommand';
 
-export default class K9s extends Command {
+export default class K9s extends BaseCommand {
     static description = "launch k9s in the current environment";
     static strict = false
 
-    static flags = {
-       ...commonFlags
-    }
-    
-    static args = [envArg];
+    static flags = BaseCommand.flags;
+    static args = BaseCommand.args;
 
-    async run() {
-        const input = this.parse(K9s);
-        printMode(input, this.constructor);
-        const env = await initEnv(input);
+    async run(): Promise<void> {
+        this.printMode(this.input!, this.constructor);
+
+        const env = await initEnv(this.input!);
         await env.shell.close();
 
         const { k8sContext, k8sNamespace } = env.konfig.environment;

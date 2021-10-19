@@ -1,4 +1,5 @@
 import { flags } from '@oclif/command'
+import { flags as parserFlags } from '@oclif/parser'
 
 export const help = flags.help({ char: 'h' });
 
@@ -34,7 +35,6 @@ export const instanceArg = {
     required: true
 };
 
-export const commonArgs = [envArg, instanceArg]
+export const commonArgs = [envArg]
 
-
-export type Flags = { [index: string]: boolean | void }
+export type Flags = { [index: string]: parserFlags.IBooleanFlag<any> }
