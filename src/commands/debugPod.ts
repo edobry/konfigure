@@ -1,28 +1,18 @@
-import Command from '@oclif/command'
-
-import { commonArgs, commonFlags } from '../flags';
-import { printMode } from '../util';
 import { initEnv } from '../common';
 import { runCommand } from '../shell';
+import BaseCommand from '../baseCommand';
 
-export default class DebugPod extends Command {
+export default class DebugPod extends BaseCommand {
     static description = "launch k9s in the current environment";
     static strict = false
 
-    static flags = {
-       ...commonFlags
-    }
+    static flags = BaseCommand.flags;
+    static args = BaseCommand.args;
     
-    static args = [
-        ...commonArgs
-    ];
-
     async run() {
-        const input = this.parse(DebugPod);
+        this.printMode(this.input!, this.constructor);
 
-        printMode(input, this.constructor);
-
-        const env = await initEnv(input);
+        const env = await initEnv(this.input!);
 
         const { awsRegion } = env.konfig.environment
         await runCommand(`k8sDebugPod --az ${awsRegion}a`);

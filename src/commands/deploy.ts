@@ -1,28 +1,18 @@
-import Command from '@oclif/command'
-
-import { commonArgs, commonFlags } from '../flags';
-import { printMode } from '../util';
 import { initEnv, processDeployments } from '../common';
+import BaseCommand from '../baseCommand';
 
-export default class Deploy extends Command {
+export default class Deploy extends BaseCommand {
     static description = "deploy instances to the current environment";
     static strict = false
 
-    static flags = {
-       ...commonFlags
-    }
-    
-    static args = [
-        ...commonArgs
-    ];
+    static flags = BaseCommand.flags;
+    static args = BaseCommand.args;
 
     async run() {
-        const input = this.parse(Deploy);
+        this.printMode(this.input!, this.constructor);
 
-        printMode(input, this.constructor);
-
-        const env = await initEnv(input);
-        await processDeployments(input, env,
+        const env = await initEnv(this.input!);
+        await processDeployments(this.input!, env,
             chart => chart.deploy());
 
         await env.shell.close();

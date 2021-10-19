@@ -1,29 +1,18 @@
-import Command from '@oclif/command'
-
-import { commonArgs, commonFlags } from '../flags';
-import { printMode } from '../util';
 import { initEnv, processDeployments } from '../common';
-import { Konfiguration } from '../konfiguration';
+import BaseCommand from '../baseCommand';
 
-export default class Render extends Command {
+export default class Render extends BaseCommand {
     static description = "render instance manifests";
     static strict = false
 
-    static flags = {
-       ...commonFlags
-    }
-    
-    static args = [
-        ...commonArgs
-    ];
+    static flags = BaseCommand.flags;
+    static args = BaseCommand.args;
 
     async run() {
-        const input = this.parse(Render);
+        this.printMode(this.input!, this.constructor);
 
-        printMode(input, this.constructor);
-
-        const env = await initEnv(input);
-        await processDeployments(input, env,
+        const env = await initEnv(this.input!);
+        await processDeployments(this.input!, env,
             chart => chart.render());
 
         await env.shell.close();
