@@ -24,17 +24,19 @@ export class HelmChart<T extends Flags> {
         const valueArgs = await this.prepareValues();
         const helmArgs = [command, ...args, this.name, this.chartArg, this.versionArg, ...valueArgs];
 
+        const { k8sContext, k8sNamespace } = this.env.konfig.environment;
+        const fullCommand = `helm --kube-context ${k8sContext} --namespace ${k8sNamespace} ${helmArgs.join(' ')}`;
+
         console.log("Running helm command...")
         if(this.input.flags.dryrun) {
-            console.log(`helm ${helmArgs.join(' ')}`);
+            console.log(fullCommand);
             return;
         }
 
-        const { exitcode, output } = await this.env.shell.runCommand(`helm ${helmArgs.join(' ')}`);
-        
+        const { exitcode } = await this.env.shell.runCommand(`${fullCommand} 2>&1`);
         if(exitcode != 0) {
             console.log(`Helm command failed with error code ${exitcode}!`);
-            console.log(`${output}`)
+            process.exit(1);
         }
     }
 
