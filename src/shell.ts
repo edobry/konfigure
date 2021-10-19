@@ -163,11 +163,11 @@ const runInteractiveCommand: (shell: ControllableShell) => ShellCommand = (shell
 
             if (chunk.endsWith(TERMINATOR_CHUNK)) {
                 // console.debug("is terminator chunk")
-                const exitcode = parseInt(
-                    commandControlChunks.join('')
-                        .replace(`\n${TERMINATOR_CHUNK}`, ''), 10);
+                const chunkList = commandControlChunks.join('')
+                        .replace(`\n${TERMINATOR_CHUNK}`, '').split('\n');
+                const exitcode = parseInt(chunkList[chunkList.length-1], 10);
                 // console.log(`exit code: ${exitcode}`);
-                // console.log(commandDataChunks);
+                // console.log(commandControlChunks);
 
                 shell.unsubData(dataId);
                 shell.unsubControl(controlId);
