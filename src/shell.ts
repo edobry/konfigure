@@ -13,7 +13,6 @@ type CommandResult = {
 export type Shell = {
     chunks: string[],
     childShell: ChildProcessByStdio<internal.Writable, internal.Readable, internal.Readable>,
-    // runCommand: ShellCommand,
     close: () => Promise<CommandResult>,
 }
 export type ControllableShell = Shell & {
@@ -64,8 +63,6 @@ export async function initControllableShell(options?: { command: string }): Prom
         // console.log(`data: ${data}`)
         // console.log(`data length: ${data.length}`)
         // console.log(`data end: ${data.codePointAt(data.length-1)}`)
-        // shell.chunks.push(data);
-        // dataListeners.forEach(f => f(data));
     }).pipe(process.stdout);
     onData(x => shell.chunks.push(x));
 
@@ -77,8 +74,6 @@ export async function initControllableShell(options?: { command: string }): Prom
         // console.log(`data: ${data}`)
         // console.log(`data length: ${data.length}`)
         // console.log(`data end: ${data.codePointAt(data.length-1)}`)
-        // shell.chunks.push(data);
-        // dataListeners.forEach(f => f(data));
     });
     // onControl(x => shell.chunks.push(x));
 

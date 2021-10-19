@@ -89,8 +89,8 @@ export async function processDeployments<T extends Flags>(input: CommandInput<T>
 
     console.log(prettyPrintYaml(envValues));
 
-    deployments
+    await Promise.all(deployments
         .map(entry =>
             new HelmChart(...entry, envValues, env, input))
-        .forEach(chartHandler);
+        .map(chartHandler));
 };
