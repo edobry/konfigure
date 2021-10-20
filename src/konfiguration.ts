@@ -137,8 +137,9 @@ export class Konfiguration {
             
             instancePredicate = () => true;
         } else if(filter[0] == "chart") {
-            const chartFilter = filter.slice(1).join(', ');
-            console.log(`\nLimiting to instances of chart(s): ${chartFilter}`);
+            const charts = filter.slice(1);
+            const chartFilter = charts.join(', ');
+            console.log(`\nLimiting to instances of chart${charts.length > 1 ? 's' : ''}: ${chartFilter}`);
             instancePredicate = ([, deployment]) => chartFilter.includes(deployment.chart);
         }
         else {

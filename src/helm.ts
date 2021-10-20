@@ -11,7 +11,7 @@ import { InteractiveShell } from "./shell";
 export async function runHelmCommand(shell: InteractiveShell, dryrun: boolean, ...helmArgs: string[]) {
     const fullCommand = `helm ${helmArgs.join(' ')}`;
 
-    console.log("Running helm command...")
+    // console.debug("\nRunning helm command...")
     if(dryrun) {
         console.log(fullCommand);
         return;
@@ -32,7 +32,7 @@ export async function updateHelmRepos(shell: InteractiveShell, dryrun: boolean) 
 
 export class HelmChart<T extends Flags> {
     constructor(private name: string, private dep: Deployment, private envValues: ValuesMap, private env: Environment, private input: CommandInput<T>) {
-        console.log(prettyPrintYaml(dep))
+        // console.log(prettyPrintYaml(dep))
     }
     
     async runChartCommand(commandArgs: string[], ...extraArgs: string[]) {
@@ -51,7 +51,7 @@ export class HelmChart<T extends Flags> {
         const versionArg = !version ? '' : `--version=${version}`;
         const chartArg = source == "local" ? chart : `fimbulvetr/${chart}`;
         
-        this.runChartCommand(commandArgs, chartArg, versionArg, ...valueArgs)
+        return this.runChartCommand(commandArgs, chartArg, versionArg, ...valueArgs)
     }
 
     async render() {
@@ -112,8 +112,8 @@ export class HelmChart<T extends Flags> {
 async function writeValueFile(values: object) {
     const { fd, path, cleanup } = await tmp.file({ template: 'tmp-XXXXXX.json' });
 
-    console.debug(`Writing values file ${path}...`)
-    console.log(prettyPrintYaml(values));
+    // console.debug(`Writing values file ${path}...`)
+    // console.debug(prettyPrintYaml(values));
 
     const { bytesWritten, buffer } = await fs.write(fd, Buffer.from(JSON.stringify(values)))
 
