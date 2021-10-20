@@ -1,6 +1,4 @@
-import { Environment } from '../common';
-import { runDtCommand } from '../shell';
-import BaseCommand, { CommandInput } from '../baseCommand';
+import BaseCommand, { CommandInput, Environment, runDtCommand } from '../baseCommand';
 
 export default class K9s extends BaseCommand {
     static description = "launch k9s in the current environment";

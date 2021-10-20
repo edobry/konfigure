@@ -1,5 +1,4 @@
-import { Environment, processDeployments } from '../common';
-import BaseCommand, { CommandInput } from '../baseCommand';
+import BaseCommand, { CommandInput, Environment, processDeployments } from '../baseCommand';
 
 export default class Deploy extends BaseCommand {
     static description = "deploy instances to the current environment";

@@ -1,7 +1,10 @@
-import { Command } from '@oclif/command'
-import { Input, OutputArgs, OutputFlags } from '@oclif/parser'
-import { Environment, initEnv } from './common';
+import { Command } from "@oclif/command";
+import { Input, OutputArgs, OutputFlags } from "@oclif/parser";
+import { Environment, initEnv } from "./common";
 import { Flags, commonFlags, commonArgs } from "./flags";
+
+export { Environment, processDeployments } from "./common";
+export { runCommand, runDtCommand } from "./shell";
 
 export interface CommandInput<T extends Flags> {
     flags: OutputFlags<T>;

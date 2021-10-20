@@ -1,6 +1,4 @@
-import { Environment } from '../common';
-import { runCommand } from '../shell';
-import BaseCommand, { CommandInput } from '../baseCommand';
+import BaseCommand, { CommandInput, Environment, runCommand } from '../baseCommand';
 
 export default class Edit extends BaseCommand {
     static description = "launch k9s in the current environment";
