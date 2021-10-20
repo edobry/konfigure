@@ -35,42 +35,45 @@ export class HelmChart<T extends Flags> {
         console.log(prettyPrintYaml(dep))
     }
     
-    async runChartCommand(command: string, ...args: string[]) {
+    async runChartCommand(commandArgs: string[], ...extraArgs: string[]) {
+        const { k8sContext, k8sNamespace } = this.env.konfig.environment;
+        const helmArgs = [...commandArgs,
+            "--kube-context", k8sContext, "--namespace", k8sNamespace,
+            this.name, ...extraArgs];
+
+        return runHelmCommand(this.env.shell, this.input.flags.dryrun, ...helmArgs);
+    }
+    
+    async runChartValuesCommand(...commandArgs: string[]) {
         const valueArgs = await this.prepareValues();
 
         const { chart, source, version } = this.dep;
         const versionArg = !version ? '' : `--version=${version}`;
         const chartArg = source == "local" ? chart : `fimbulvetr/${chart}`;
-
-        const { k8sContext, k8sNamespace } = this.env.konfig.environment;
-        const helmArgs = [
-            "--kube-context", k8sContext, "--namespace", k8sNamespace,
-            command, ...args, this.name, chartArg, versionArg,
-            ...valueArgs];
-
-        return runHelmCommand(this.env.shell, this.input.flags.dryrun, ...helmArgs);
+        
+        this.runChartCommand(commandArgs, chartArg, versionArg, ...valueArgs)
     }
 
     async render() {
         console.log(`\nRendering ${this.name}...`)
 
-        return this.runChartCommand("template");
+        return this.runChartValuesCommand("template");
     }
     
     async deploy() {
         console.log(`\nDeploying ${this.name}...`)
 
-        return this.runChartCommand("upgrade", "--install");
+        return this.runChartValuesCommand("upgrade", "--install");
     }
     
     async uninstall() {
         console.log(`\nUninstalling ${this.name}...`)
 
-        return this.runChartCommand("uninstall");
+        return this.runChartCommand(["uninstall"]);
     }
 
     async show() {
-        return this.runChartCommand("show");
+        return this.runChartValuesCommand("show");
     }
 
     async prepareValues() {
