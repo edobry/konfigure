@@ -6,61 +6,71 @@ import { CommandInput } from "./baseCommand";
 
 import * as tmp from "tmp-promise";
 import * as fs from "fs-extra";
+import { InteractiveShell } from "./shell";
+
+export async function runHelmCommand(shell: InteractiveShell, dryrun: boolean, ...helmArgs: string[]) {
+    const fullCommand = `helm ${helmArgs.join(' ')}`;
+
+    console.log("Running helm command...")
+    if(dryrun) {
+        console.log(fullCommand);
+        return;
+    }
+
+    const { exitcode } = await shell.runCommand(`${fullCommand} 2>&1`);
+    if(exitcode != 0) {
+        console.log(`Helm command failed with error code ${exitcode}!`);
+        process.exit(1);
+    }
+};
+
+export async function updateHelmRepos(shell: InteractiveShell, dryrun: boolean) {
+    console.log(`\nUpdating repositories...`)
+
+    return runHelmCommand(shell, dryrun, "repo", "update");
+}
 
 export class HelmChart<T extends Flags> {
-    private versionArg: string;
-    private chartArg: string;
-
     constructor(private name: string, private dep: Deployment, private envValues: ValuesMap, private env: Environment, private input: CommandInput<T>) {
-        const { chart, version, source } = dep;
-
         console.log(prettyPrintYaml(dep))
-
-        this.versionArg = !version ? '' : `--version=${version}`;
-        this.chartArg = source == "local" ? chart : `fimbulvetr/${chart}`;
     }
-
-    async runCommand(command: string, ...args: string[]) {
+    
+    async runChartCommand(command: string, ...args: string[]) {
         const valueArgs = await this.prepareValues();
-        const helmArgs = [command, ...args, this.name, this.chartArg, this.versionArg, ...valueArgs];
+
+        const { chart, source, version } = this.dep;
+        const versionArg = !version ? '' : `--version=${version}`;
+        const chartArg = source == "local" ? chart : `fimbulvetr/${chart}`;
 
         const { k8sContext, k8sNamespace } = this.env.konfig.environment;
-        const fullCommand = `helm --kube-context ${k8sContext} --namespace ${k8sNamespace} ${helmArgs.join(' ')}`;
+        const helmArgs = [
+            "--kube-context", k8sContext, "--namespace", k8sNamespace,
+            command, ...args, this.name, chartArg, versionArg,
+            ...valueArgs];
 
-        console.log("Running helm command...")
-        if(this.input.flags.dryrun) {
-            console.log(fullCommand);
-            return;
-        }
-
-        const { exitcode } = await this.env.shell.runCommand(`${fullCommand} 2>&1`);
-        if(exitcode != 0) {
-            console.log(`Helm command failed with error code ${exitcode}!`);
-            process.exit(1);
-        }
+        return runHelmCommand(this.env.shell, this.input.flags.dryrun, ...helmArgs);
     }
-
 
     async render() {
         console.log(`\nRendering ${this.name}...`)
 
-        return this.runCommand("template");
+        return this.runChartCommand("template");
     }
     
     async deploy() {
         console.log(`\nDeploying ${this.name}...`)
 
-        return this.runCommand("upgrade", "--install");
+        return this.runChartCommand("upgrade", "--install");
     }
     
     async uninstall() {
         console.log(`\nUninstalling ${this.name}...`)
 
-        return this.runCommand("uninstall");
+        return this.runChartCommand("uninstall");
     }
 
     async show() {
-        return this.runCommand("show");
+        return this.runChartCommand("show");
     }
 
     async prepareValues() {

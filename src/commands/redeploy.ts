@@ -14,4 +14,4 @@ export default class Redeploy extends BaseCommand {
                 return chart.deploy();
             });
     }
-}
+};

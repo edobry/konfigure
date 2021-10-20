@@ -3,7 +3,7 @@ import { CommandInput } from './baseCommand';
 import { Konfiguration } from "./konfiguration";
 import { initDtShell, InteractiveShell } from "./shell";
 import { prettyPrintYaml } from "./util";
-import { HelmChart } from "./helm";
+import { HelmChart, runHelmCommand, updateHelmRepos } from "./helm";
 
 export type Environment = {
     konfig: Konfiguration,
@@ -70,6 +70,7 @@ async function handleAuth(flags: Flags, konfig: Konfiguration, shell: Interactiv
 //     }
 // }
 
+// export async function processDeployments<T extends Flags>(input: CommandInput<T>, env: Environment, updateRepos: boolean, chartHandler: (chart: HelmChart<T>) => Promise<void>) {
 export async function processDeployments<T extends Flags>(input: CommandInput<T>, env: Environment, chartHandler: (chart: HelmChart<T>) => Promise<void>) {
     const deployments = env.konfig.filterDeployments(input.argv.slice(1));
 
@@ -77,6 +78,10 @@ export async function processDeployments<T extends Flags>(input: CommandInput<T>
         console.log("No deployments configured, nothing to do. Exiting!")
         return;
     }
+
+    // TODO: check if helm charts present
+    if(!input.flags.testing)
+        updateHelmRepos(env.shell, input.flags.dryrun);
 
     console.log("\nEnv values:")
     const envValues = {
