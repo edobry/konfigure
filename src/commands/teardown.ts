@@ -9,6 +9,6 @@ export default class Teardown extends BaseCommand {
 
     async command(env: Environment, input: CommandInput<typeof Teardown.flags>) {
         await processDeployments(input, env,
-            chart => chart.uninstall());
+            chart => chart.uninstall(), true);
     }
 }

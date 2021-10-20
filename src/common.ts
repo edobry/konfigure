@@ -70,8 +70,7 @@ async function handleAuth(flags: Flags, konfig: Konfiguration, shell: Interactiv
 //     }
 // }
 
-// export async function processDeployments<T extends Flags>(input: CommandInput<T>, env: Environment, updateRepos: boolean, chartHandler: (chart: HelmChart<T>) => Promise<void>) {
-export async function processDeployments<T extends Flags>(input: CommandInput<T>, env: Environment, chartHandler: (chart: HelmChart<T>) => Promise<void>) {
+export async function processDeployments<T extends Flags>(input: CommandInput<T>, env: Environment, chartHandler: (chart: HelmChart<T>) => Promise<void>, skipRepoUpdate?: boolean,) {
     const deployments = env.konfig.filterDeployments(input.argv.slice(1));
 
     if(deployments.length == 0) {
@@ -80,7 +79,7 @@ export async function processDeployments<T extends Flags>(input: CommandInput<T>
     }
 
     // TODO: check if helm charts present
-    if(!input.flags.testing)
+    if(!input.flags.testing && !skipRepoUpdate)
         updateHelmRepos(env.shell, input.flags.dryrun);
 
     console.log("\nEnv values:")
