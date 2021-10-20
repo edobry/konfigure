@@ -48,9 +48,15 @@ export class HelmChart<T extends Flags> {
     }
     
     async deploy() {
-        console.log(`\Deploying ${this.name}...`)
+        console.log(`\nDeploying ${this.name}...`)
 
         return this.runCommand("upgrade", "--install");
+    }
+    
+    async uninstall() {
+        console.log(`\nUninstalling ${this.name}...`)
+
+        return this.runCommand("uninstall");
     }
 
     async show() {
