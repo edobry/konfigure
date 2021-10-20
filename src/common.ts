@@ -71,7 +71,7 @@ async function handleAuth(flags: Flags, konfig: Konfiguration, shell: Interactiv
 // }
 
 export async function processDeployments<T extends Flags>(input: CommandInput<T>, env: Environment, chartHandler: (chart: HelmChart<T>) => Promise<void>, skipRepoUpdate?: boolean,) {
-    const deployments = env.konfig.filterDeployments(input.argv.slice(1));
+    const deployments = env.konfig.filterDeployments<T>(input);
 
     if(deployments.length == 0) {
         console.log("No deployments configured, nothing to do. Exiting!")

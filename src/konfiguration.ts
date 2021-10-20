@@ -3,6 +3,8 @@ import * as path from "path";
 
 import { stripIndents, codeBlock } from 'common-tags'
 import { pretty, printArgs, readFile, readOptionalFile } from './util';
+import BaseCommand, { CommandInput } from "./baseCommand";
+import { Flags } from "./flags";
 
 type DeploymentMap = { [index: string]: Deployment };
 
@@ -122,8 +124,10 @@ export class Konfiguration {
         return this.konfig.chartDefaults[chartName];
     }
 
-    filterDeployments(filter: string[]) {
+    filterDeployments<T extends Flags>(input: CommandInput<T>) {
         let instancePredicate: (deployment: [string, Deployment]) => boolean;
+
+        const filter: string[] = input.argv.slice(1);
 
         if(filter[0] == "all") {
             console.log("Processing all deployments")
@@ -144,8 +148,9 @@ export class Konfiguration {
 
         return Object.entries(this.deployments)
             .filter(instancePredicate)
-            .filter(([, { disabled }]) =>
-                !disabled);
+            .filter(([, { disabled, cdDisabled }]) => {
+                return !disabled && !(input.flags.cd && cdDisabled)
+            });
     }
 
     header(): string {

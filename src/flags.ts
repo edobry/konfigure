@@ -19,8 +19,12 @@ export const debug = flags.boolean({
     description: "log out debug information"
 });
 
+export const cd = flags.boolean({
+    description: "running in a CI environment"
+});
+
 export const commonFlags = {
-    help, dryrun, testing, auth, debug
+    help, dryrun, testing, auth, debug, cd
 }
 
 export const envArg = {
