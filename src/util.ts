@@ -7,8 +7,6 @@ import highlight, { Theme } from "cli-highlight";
 import { TemplateTag, inlineArrayTransformer, splitStringTransformer,
     stripIndentTransformer, trimResultTransformer } from 'common-tags'
 import { ValuesMap } from "./konfiguration";
-import { Flags } from "./flags";
-import { CommandInput } from "./baseCommand";
 
 export const pretty = new TemplateTag(
     stripIndentTransformer("initial"),

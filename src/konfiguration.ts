@@ -1,10 +1,11 @@
-import * as fs from "fs-extra";
 import * as path from "path";
 
-import { stripIndents, codeBlock } from 'common-tags'
+import { codeBlock } from 'common-tags'
+
 import { pretty, printArgs, readFile, readOptionalFile } from './util';
-import BaseCommand, { CommandInput } from "./baseCommand";
+import { CommandInput } from "./baseCommand";
 import { Flags } from "./flags";
+import Logger from "./logger";
 
 type DeploymentMap = { [index: string]: Deployment };
 
@@ -81,8 +82,10 @@ function mergeChartDefaults(deployments: DeploymentMap, defaults: DeploymentMap)
 
 export class Konfiguration {
     private deployments: DeploymentMap;
+    private log: Logger;
 
     constructor(public name: string, private envDir: string, private konfig: KonfigProps) {
+        this.log = new Logger("konfiguration");
         this.deployments = {
             ...mergeChartDefaults(konfig.deployments, konfig.chartDefaults),
             ...parseExternalResources(konfig.externalResources)
@@ -90,7 +93,7 @@ export class Konfiguration {
     }
     
     static async read(envName: string) {
-        console.log("Reading konfiguration...");
+        Logger.root.info("Reading konfiguration...");
 
         const currentDir = process.cwd();
         const envDir = path.join(currentDir, `env/${envName}`);
@@ -130,7 +133,7 @@ export class Konfiguration {
         const filter: string[] = input.argv.slice(1);
 
         if(filter[0] == "all") {
-            console.log("Processing all deployments")
+            this.log.info("Processing all deployments")
             
             if(filter.length > 1)
                 console.warn("Additional instances specified after 'all' keyword, will be ignored.\n")
@@ -139,11 +142,11 @@ export class Konfiguration {
         } else if(filter[0] == "chart") {
             const charts = filter.slice(1);
             const chartFilter = charts.join(', ');
-            console.log(`\nLimiting to instances of chart${charts.length > 1 ? 's' : ''}: ${chartFilter}`);
+            this.log.info(`\nLimiting to instances of chart${charts.length > 1 ? 's' : ''}: ${chartFilter}`);
             instancePredicate = ([, deployment]) => chartFilter.includes(deployment.chart);
         }
         else {
-            console.log(`\nLimiting to: ${filter.join(', ')}`);
+            this.log.info(`\nLimiting to: ${filter.join(', ')}`);
             instancePredicate = ([name]) => filter.includes(name);
         }
 
@@ -152,6 +155,17 @@ export class Konfiguration {
             .filter(([, { disabled, cdDisabled }]) => {
                 return !disabled && !(input.flags.cd && cdDisabled)
             });
+    }
+
+    logHeader() {
+        this.log.info(`konfiguration ${this.konfig.apiVersion}`);
+        this.log.infoBlank()
+        this.log.info(`Initializing DP environment '${this.name}'...`);
+        this.log.info(`Terraform environment: '${this.konfig.environment.tfEnv}'`);
+        this.log.info(`AWS account: '${this.konfig.environment.awsAccount}'`);
+        this.log.info(`AWS region: '${this.konfig.environment.awsRegion}'`);
+        this.log.info(`K8s context: '${this.konfig.environment.k8sContext}'`);
+        this.log.info(`K8s namespace: '${this.konfig.environment.k8sNamespace}'`);
     }
 
     header(): string {
@@ -228,8 +242,8 @@ function externalResourceToString(name: string,
                 "Service": service,
                 "Secrets": externalSecrets})
 
-    console.log("the test")
-    console.log(test)
+    // console.log("the test")
+    // console.log(test)
 
     return pretty`
         ${name}:

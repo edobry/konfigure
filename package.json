@@ -59,6 +59,8 @@
     "common-tags": "^1.8.0",
     "fs-extra": "^10.0.0",
     "js-yaml": "^4.1.0",
+    "pino": "^7.0.3",
+    "pino-pretty": "^7.1.0",
     "tmp": "^0.2.1",
     "tmp-promise": "^3.0.2",
     "tslib": "^1.14.1",

@@ -1,5 +1,6 @@
 import { ChildProcessByStdio, CommonOptions, spawn, SpawnOptionsWithoutStdio } from "child_process";
 import internal = require("stream");
+import Logger from "./logger";
 import { readOptionalFile } from "./util";
 
 // adapted from https://github.com/joshuatz/nodejs-child-process-testing/blob/main/persistent-shell.js
@@ -60,9 +61,9 @@ export async function initControllableShell(options?: { command: string }): Prom
         Object.values(dataListeners)
             .forEach(f => f(chunk));
 
-        // console.log(`data: ${data}`)
-        // console.log(`data length: ${data.length}`)
-        // console.log(`data end: ${data.codePointAt(data.length-1)}`)
+        // Logger.root.debug(`data: ${data}`)
+        // Logger.root.debug(`data length: ${data.length}`)
+        // Logger.root.debug(`data end: ${data.codePointAt(data.length-1)}`)
     }).pipe(process.stdout);
     onData(x => shell.chunks.push(x));
 
@@ -71,9 +72,9 @@ export async function initControllableShell(options?: { command: string }): Prom
         Object.values(controlListeners)
             .forEach(f => f(chunk));
 
-        // console.log(`data: ${data}`)
-        // console.log(`data length: ${data.length}`)
-        // console.log(`data end: ${data.codePointAt(data.length-1)}`)
+        // Logger.root.debug(`data: ${data}`)
+        // Logger.root.debug(`data length: ${data.length}`)
+        // Logger.root.debug(`data end: ${data.codePointAt(data.length-1)}`)
     });
     // onControl(x => shell.chunks.push(x));
 
@@ -97,7 +98,7 @@ export async function initShell(options?: { command: string }): Promise<Shell> {
     if(options?.command)
         shellOptions.shell = shell;
     
-    console.debug("launching child shell...")
+    Logger.root.debug("launching child shell...")
     const childShell = spawn(options?.command || shell, [], shellOptions);
 
     const chunks: string[] = [];
@@ -106,7 +107,7 @@ export async function initShell(options?: { command: string }): Promise<Shell> {
     const errorListeners: ConsumerList<CommandResult | Error> = [];
 
     childShell.on("close", (exitcode: number) => {
-        // console.log(`exit: ${exitcode}`);
+        // Logger.root.debug(`exit: ${exitcode}`);
 
         (exitcode == 0
             ? exitListeners
@@ -117,7 +118,7 @@ export async function initShell(options?: { command: string }): Promise<Shell> {
     });
 
     childShell.on("error", (err) => {
-        // console.log(`exit: ${exitCode}`)
+        // Logger.root.debug(`exit: ${exitCode}`)
 
         errorListeners.forEach((f) => f(err));
     });
@@ -152,22 +153,22 @@ const runInteractiveCommand: (shell: ControllableShell) => ShellCommand = (shell
 
     const commandResult = new Promise<CommandResult>((res, rej) => {
         const dataId = shell.onData((chunk) => {
-            // console.debug(`current data chunk: ${chunk}`);
+            // Logger.root.debug(`current data chunk: ${chunk}`);
 
             commandDataChunks.push(chunk);
         });
 
         const controlId = shell.onControl((chunk) => {
-            // console.debug(`current control chunk: ${chunk}`);
+            // Logger.root.debug(`current control chunk: ${chunk}`);
             commandControlChunks.push(chunk);
 
             if (chunk.endsWith(TERMINATOR_CHUNK)) {
-                // console.debug("is terminator chunk")
+                // Logger.root.debug("is terminator chunk")
                 const chunkList = commandControlChunks.join('')
                         .replace(`\n${TERMINATOR_CHUNK}`, '').split('\n');
                 const exitcode = parseInt(chunkList[chunkList.length-1], 10);
-                // console.log(`exit code: ${exitcode}`);
-                // console.log(commandControlChunks);
+                // Logger.root.debug(`exit code: ${exitcode}`);
+                // Logger.root.debug(commandControlChunks);
 
                 shell.unsubData(dataId);
                 shell.unsubControl(controlId);
@@ -216,7 +217,7 @@ export async function runCommand(command: string) {
     const errorListeners: ConsumerList<CommandResult | Error> = [];
 
     childShell.on("close", (code) => {
-        // console.debug(`exit: ${code}`);
+        // Logger.root.debug(`exit: ${code}`);
 
         const exitcode = code || 0;
 
@@ -229,7 +230,7 @@ export async function runCommand(command: string) {
     });
 
     childShell.on("error", (err) => {
-        // console.log(`exit: ${exitCode}`)
+        // Logger.root.debug(`exit: ${exitCode}`)
 
         errorListeners.forEach((f) => f(err));
     });
@@ -245,7 +246,7 @@ export async function runCommand(command: string) {
 export async function initDtShell() {
     const shell = await initInteractiveShell();
     
-    console.debug("initializing dataeng-tools...")
+    Logger.root.debug("initializing dataeng-tools...")
     await shell.runCommand(`source ${await findDtInitScript()}`);
 
     return shell;
@@ -256,7 +257,7 @@ async function findDtInitScript(): Promise<string> {
     const dtConfigFile = `${configDir}/dataeng-tools/config.json`;
 
     const dtConfig = await readOptionalFile(dtConfigFile);
-    // console.debug(prettyPrintYaml(dtConfig))
+    // Logger.root.debug(prettyPrintYaml(dtConfig))
     const projectDir = dtConfig.projectDir;
 
     return `${projectDir}/dataeng-tools/shell/init.sh`;

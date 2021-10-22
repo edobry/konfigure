@@ -1,7 +1,10 @@
 import { Command } from "@oclif/command";
+import { IConfig } from "@oclif/config";
+
 import { Input, OutputArgs, OutputFlags } from "@oclif/parser";
 import { Environment, initEnv } from "./common";
 import { Flags, commonFlags, commonArgs } from "./flags";
+import Logger from "./logger";
 
 export { Environment, processDeployments } from "./common";
 export { runCommand, runDtCommand } from "./shell";
@@ -18,6 +21,13 @@ export default abstract class BaseCommand extends Command {
 
     private input?: CommandInput<typeof BaseCommand.flags>;
     private env?: Environment;
+
+    protected logger: Logger;
+
+    constructor(argv: string[], config: IConfig) {
+        super(argv, config);
+        this.logger = new Logger("BaseCommand");
+    }
 
     async init(): Promise<void> {
         this.input = this.parse(this.constructor as Input<typeof BaseCommand.flags>);
@@ -38,14 +48,14 @@ export default abstract class BaseCommand extends Command {
 
     printMode<T extends Flags>({ flags: { dryrun, testing, auth, debug } }: CommandInput<T>, test: any) {
         if(dryrun)
-            console.log("-- DRYRUN MODE --")
+            this.logger.info("-- DRYRUN MODE --")
         if(testing)
-            console.log("-- TESTING MODE --")
+            this.logger.info("-- TESTING MODE --")
         if(auth)
-            console.log("-- AUTH MODE --")
+            this.logger.info("-- AUTH MODE --")
         if(debug)
-            console.log("-- DEBUG MODE --")
+            this.logger.info("-- DEBUG MODE --")
 
-        console.log(`-- ${test.name.toUpperCase()} MODE --`);
+        this.logger.info(`-- ${test.name.toUpperCase()} MODE --`);
     }
 }

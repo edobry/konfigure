@@ -1,5 +1,4 @@
 import { Deployment, ValuesMap } from "./konfiguration";
-import { prettyPrintYaml } from "./util";
 import { Flags } from "./flags";
 import { Environment } from "./common";
 import { CommandInput } from "./baseCommand";
@@ -7,32 +6,35 @@ import { CommandInput } from "./baseCommand";
 import * as tmp from "tmp-promise";
 import * as fs from "fs-extra";
 import { InteractiveShell } from "./shell";
+import Logger from "./logger";
 
 export async function runHelmCommand(shell: InteractiveShell, dryrun: boolean, ...helmArgs: string[]) {
     const fullCommand = `helm ${helmArgs.join(' ')}`;
 
-    // console.debug("\nRunning helm command...")
+    Logger.root.debug("\nRunning helm command...")
     if(dryrun) {
-        console.log(fullCommand);
+        Logger.root.info(fullCommand);
         return;
     }
 
     const { exitcode } = await shell.runCommand(`${fullCommand} 2>&1`);
     if(exitcode != 0) {
-        console.log(`Helm command failed with error code ${exitcode}!`);
+        Logger.root.error(`Helm command failed with error code ${exitcode}!`);
         process.exit(1);
     }
 };
 
 export async function updateHelmRepos(shell: InteractiveShell, dryrun: boolean) {
-    console.log(`\nUpdating repositories...`)
+    Logger.root.info(`\nUpdating repositories...`)
 
     return runHelmCommand(shell, dryrun, "repo", "update");
 }
 
 export class HelmChart<T extends Flags> {
+    private log: Logger;
     constructor(private name: string, private dep: Deployment, private envValues: ValuesMap, private env: Environment, private input: CommandInput<T>) {
-        // console.log(prettyPrintYaml(dep))
+        this.log = new Logger("HelmChart");
+        this.log.debugYaml(dep);
     }
     
     async runChartCommand(commandArgs: string[], ...extraArgs: string[]) {
@@ -55,19 +57,19 @@ export class HelmChart<T extends Flags> {
     }
 
     async render() {
-        console.log(`\nRendering ${this.name}...`)
+        this.log.info(`\nRendering ${this.name}...`)
 
         return this.runChartValuesCommand("template");
     }
     
     async deploy() {
-        console.log(`\nDeploying ${this.name}...`)
+        this.log.info(`\nDeploying ${this.name}...`)
 
         return this.runChartValuesCommand("upgrade", "--install");
     }
     
     async uninstall() {
-        console.log(`\nUninstalling ${this.name}...`)
+        this.log.info(`\nUninstalling ${this.name}...`)
 
         return this.runChartCommand(["uninstall"]);
     }
@@ -98,24 +100,24 @@ export class HelmChart<T extends Flags> {
             this.dep.values || {},
         ];
 
-        console.debug("Writing values files...")
+        this.log.debug("Writing values files...")
         const valueFiles = await Promise.all([
             ...values
                 .filter(x => Object.keys(x).length !== 0)
-                .map(writeValueFile)
+                .map(this.writeValueFile.bind(this))
         ]);
 
         return valueFiles.map(x => ["-f", x]).flat()
     }
-}
 
-async function writeValueFile(values: object) {
-    const { fd, path, cleanup } = await tmp.file({ template: 'tmp-XXXXXX.json' });
+    async writeValueFile(values: object) {
+        const { fd, path, cleanup } = await tmp.file({ template: 'tmp-XXXXXX.json' });
 
-    // console.debug(`Writing values file ${path}...`)
-    // console.debug(prettyPrintYaml(values));
+        this.log.debug(`Writing values file ${path}...`)
+        this.log.debugYaml(values);
 
-    const { bytesWritten, buffer } = await fs.write(fd, Buffer.from(JSON.stringify(values)))
+        const { bytesWritten, buffer } = await fs.write(fd, Buffer.from(JSON.stringify(values)))
 
-    return path;
+        return path;
+    }
 }

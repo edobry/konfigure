@@ -2,8 +2,8 @@ import { Flags } from "./flags";
 import { CommandInput } from './baseCommand';
 import { Konfiguration } from "./konfiguration";
 import { initDtShell, InteractiveShell } from "./shell";
-import { prettyPrintYaml } from "./util";
-import { HelmChart, runHelmCommand, updateHelmRepos } from "./helm";
+import { HelmChart, updateHelmRepos } from "./helm";
+import Logger from "./logger";
 
 export type Environment = {
     konfig: Konfiguration,
@@ -20,16 +20,15 @@ export async function initEnv<T extends Flags>({ args, flags }: CommandInput<T>)
     } catch (e) {
         const { code } = e as Error & { code: "ENOENT" };
         if(code == "ENOENT") {
-            console.log(`No konfiguration file found for the ${envName} environment!`)
+            Logger.root.info(`No konfiguration file found for the ${envName} environment!`)
         } else {
-            console.error(e);
+            Logger.root.error(e as string);
         }
 
         process.exit(1);
     }
 
-    console.log(konfig.header())
-    console.log()
+    konfig.logHeader()
 
     const shell = await initDtShell();
     await handleAuth(flags, konfig, shell);
@@ -43,15 +42,28 @@ async function handleAuth(flags: Flags, konfig: Konfiguration, shell: Interactiv
     const accountRole = "admin"
     const profile = `${account}-${accountRole}`;
     
-    console.log("Checking authentication...")
+    Logger.root.infoBlank();
+    Logger.root.info("Checking authentication...");
     try {
         if(flags.auth) {
-            await shell.runCommand(`awsAuth ${profile}`)
-            process.env.AWS_PROFILE = profile;
+            const authCommand = `awsAuth ${profile}`;
+            if(flags.dryrun)
+                Logger.root.info(authCommand)
+            else {
+                await shell.runCommand(authCommand)
+                process.env.AWS_PROFILE = profile;
+            }
         }
 
-        const { exitcode } = await shell.runCommand(`checkAccountAuthAndFail ${account}`);
-        // console.debug(`check exit code: ${exitcode}`)
+        
+        const checkAuthCommand = `checkAccountAuthAndFail ${account}`;
+        if(flags.dryrun) {
+            Logger.root.info(checkAuthCommand)
+            return;
+        }
+        
+        const { exitcode } = await shell.runCommand(checkAuthCommand);
+        Logger.root.debug(`check exit code: ${exitcode}`);
         if(exitcode != 0)
             process.exit(1);
     }
@@ -65,7 +77,7 @@ async function handleAuth(flags: Flags, konfig: Konfiguration, shell: Interactiv
 //         const id = await $`aws sts get-caller-identity`
 //         id.stdout
 //     } catch(e) {
-//         console.log("Unauthenticated! Please authenticate with AWS before rerunning.")
+//         Logger.root.info("Unauthenticated! Please authenticate with AWS before rerunning.")
 //         process.exit(1);
 //     }
 // }
@@ -74,7 +86,7 @@ export async function processDeployments<T extends Flags>(input: CommandInput<T>
     const deployments = env.konfig.filterDeployments<T>(input);
 
     if(deployments.length == 0) {
-        console.log("No deployments configured, nothing to do. Exiting!")
+        Logger.root.info("No deployments configured, nothing to do. Exiting!")
         return;
     }
 
@@ -82,7 +94,6 @@ export async function processDeployments<T extends Flags>(input: CommandInput<T>
     if(!input.flags.testing && !skipRepoUpdate)
         updateHelmRepos(env.shell, input.flags.dryrun);
 
-    console.log("\nEnv values:")
     const envValues = {
         region: env.konfig?.environment.awsRegion,
         nodegroup: env.konfig?.environment.eksNodegroup,
@@ -90,8 +101,8 @@ export async function processDeployments<T extends Flags>(input: CommandInput<T>
             "eks.amazonaws.com/nodegroup": env.konfig?.environment.eksNodegroup
         }
     };
-
-    console.log(prettyPrintYaml(envValues));
+    Logger.root.debug("Env values:")
+    Logger.root.debugYaml(envValues);
 
     await Promise.all(deployments
         .map(entry =>
