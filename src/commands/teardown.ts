@@ -1,14 +1,14 @@
-import BaseCommand, { CommandInput, Environment, processDeployments } from '../baseCommand';
+import BaseCommand, { CommandContext, processDeployments } from '../baseCommand';
 
-export default class Teardown extends BaseCommand {
+export default class TeardownCommand extends BaseCommand<typeof TeardownCommand.flags> {
     static description = "tears down instances from the current environment";
     static strict = false
 
     static flags = BaseCommand.flags;
     static args = BaseCommand.args;
 
-    async command(env: Environment, input: CommandInput<typeof Teardown.flags>) {
-        await processDeployments(input, env,
+    async command(ctx: CommandContext<typeof TeardownCommand.flags>) {
+        await processDeployments(ctx,
             chart => chart.uninstall(), true);
     }
 }

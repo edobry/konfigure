@@ -6,14 +6,17 @@ export default class Logger {
 
     protected logger: pino.Logger;
 
-    constructor(module: string) {
+    constructor(module: string, parent?: Logger) {
         this.logger = module == "root"
             ? pino({
                 transport: {
                     target: './pinoPretty.js',
+                    options: {
+                        debug: process.env.KONFIG_DEBUG
+                    }
                 }
             })
-            : Logger.root.logger.child({
+            : (parent || Logger.root).logger.child({
                 module
             });
     }
@@ -28,6 +31,10 @@ export default class Logger {
 
     debug(...args: string[]) {
         this.logger.debug(args);
+    }
+
+    debugBlank(...args: string[]) {
+        this.debug(' ')
     }
 
     debugYaml(object: any) {

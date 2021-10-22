@@ -1,14 +1,14 @@
-import BaseCommand, { CommandInput, Environment, processDeployments } from '../baseCommand';
+import BaseCommand, { CommandContext, processDeployments } from '../baseCommand';
 
-export default class Render extends BaseCommand {
+export default class RenderCommand extends BaseCommand<typeof RenderCommand.flags> {
     static description = "render instance manifests";
     static strict = false
 
     static flags = BaseCommand.flags;
     static args = BaseCommand.args;
 
-    async command(env: Environment, input: CommandInput<typeof Render.flags>) {
-        await processDeployments(input, env,
+    async command(ctx: CommandContext<typeof RenderCommand.flags>) {
+        await processDeployments(ctx,
             chart => chart.render());
     }
 }

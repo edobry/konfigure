@@ -1,14 +1,14 @@
-import BaseCommand, { CommandInput, Environment, processDeployments } from '../baseCommand';
+import BaseCommand, { processDeployments, CommandContext } from '../baseCommand';
 
-export default class Deploy extends BaseCommand {
+export default class DeployCommand extends BaseCommand<typeof DeployCommand.flags> {
     static description = "deploy instances to the current environment";
     static strict = false
 
     static flags = BaseCommand.flags;
     static args = BaseCommand.args;
 
-    async command(env: Environment, input: CommandInput<typeof Deploy.flags>) {
-        await processDeployments(input, env,
+    async command(ctx: CommandContext<typeof DeployCommand.flags>) {
+        await processDeployments(ctx,
             chart => chart.deploy());
     }
 }

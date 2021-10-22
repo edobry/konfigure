@@ -2,12 +2,13 @@ import { Command } from "@oclif/command";
 import { IConfig } from "@oclif/config";
 
 import { Input, OutputArgs, OutputFlags } from "@oclif/parser";
-import { Environment, initEnv } from "./common";
+import { CommandContext } from "./commandContext";
 import { Flags, commonFlags, commonArgs } from "./flags";
 import Logger from "./logger";
 
-export { Environment, processDeployments } from "./common";
+export { processDeployments } from "./common";
 export { runCommand, runDtCommand } from "./shell";
+export { CommandContext } from "./commandContext";
 
 export interface CommandInput<T extends Flags> {
     flags: OutputFlags<T>;
@@ -15,47 +16,51 @@ export interface CommandInput<T extends Flags> {
     argv: string[];
 };
 
-export default abstract class BaseCommand extends Command {
+export default abstract class BaseCommand<T extends Flags> extends Command {
     static flags = commonFlags;
     static args = commonArgs;
 
-    private input?: CommandInput<typeof BaseCommand.flags>;
-    private env?: Environment;
+    private ctx?: CommandContext<T>;
 
     protected logger: Logger;
 
     constructor(argv: string[], config: IConfig) {
         super(argv, config);
-        this.logger = new Logger("BaseCommand");
+        this.logger = new Logger(`${this.constructor.name}`);
+    }
+
+    get name() {
+        return this.constructor.name;
     }
 
     async init(): Promise<void> {
-        this.input = this.parse(this.constructor as Input<typeof BaseCommand.flags>);
+        const input = this.parse(this.constructor as Input<T>);
+        this.printMode(input, this.constructor);
+        this.ctx = await CommandContext.init<T>(this.logger, input);
     }
 
     async run() {
-        this.printMode(this.input!, this.constructor);
-        this.env = await initEnv(this.input!);
 
-        await this.command(this.env, this.input!);
+        await this.command(this.ctx!);
     }
 
-    abstract command(env: Environment, input: CommandInput<typeof BaseCommand.flags>): Promise<void>
+    abstract command(ctx: CommandContext<T>): Promise<void>
 
     async finally(_: Error | undefined) {
-        await this.env?.shell.close();
+        await this.ctx?.env?.shell.close();
     }
 
     printMode<T extends Flags>({ flags: { dryrun, testing, auth, debug } }: CommandInput<T>, test: any) {
-        if(dryrun)
-            this.logger.info("-- DRYRUN MODE --")
-        if(testing)
-            this.logger.info("-- TESTING MODE --")
-        if(auth)
-            this.logger.info("-- AUTH MODE --")
-        if(debug)
-            this.logger.info("-- DEBUG MODE --")
+        this.logger.info(`running ${test.name}`);
 
-        this.logger.info(`-- ${test.name.toUpperCase()} MODE --`);
+        if(dryrun)
+            this.logger.info("dryrun flag set: printing commands instead of executing")
+        if(testing)
+            this.logger.info("testing flag set: skipping repo updates")
+        if(auth)
+            this.logger.info("auth flag set: automatically authenticating")
+        if(debug)
+            this.logger.info("debug mode enabled")
+
     }
 }

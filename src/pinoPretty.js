@@ -11,7 +11,7 @@ module.exports = (opts) =>
         // messageFormat: "test"
         messageFormat: ({ 0: msg, module, time }, messageKey, levelLabel) => {
             // console.log(args);
-            // return `${module ? `${module} - ` : ''}${msg}`;
-            return msg;
+            return `${opts.debug && module ? `${module} - ` : ''}${msg}`;
+            // return msg;
         },
     });

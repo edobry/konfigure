@@ -80,12 +80,14 @@ function mergeChartDefaults(deployments: DeploymentMap, defaults: DeploymentMap)
     }));
 }
 
+const konfigLogger = new Logger("Konfiguration");
+
 export class Konfiguration {
     private deployments: DeploymentMap;
     private log: Logger;
 
     constructor(public name: string, private envDir: string, private konfig: KonfigProps) {
-        this.log = new Logger("konfiguration");
+        this.log = new Logger(`env/${name}`);
         this.deployments = {
             ...mergeChartDefaults(konfig.deployments, konfig.chartDefaults),
             ...parseExternalResources(konfig.externalResources)
@@ -93,7 +95,8 @@ export class Konfiguration {
     }
     
     static async read(envName: string) {
-        Logger.root.info("Reading konfiguration...");
+        Logger.root.infoBlank();
+        konfigLogger.info("Reading konfiguration...");
 
         const currentDir = process.cwd();
         const envDir = path.join(currentDir, `env/${envName}`);
@@ -132,6 +135,7 @@ export class Konfiguration {
 
         const filter: string[] = input.argv.slice(1);
 
+        Logger.root.infoBlank();
         if(filter[0] == "all") {
             this.log.info("Processing all deployments")
             
@@ -142,11 +146,11 @@ export class Konfiguration {
         } else if(filter[0] == "chart") {
             const charts = filter.slice(1);
             const chartFilter = charts.join(', ');
-            this.log.info(`\nLimiting to instances of chart${charts.length > 1 ? 's' : ''}: ${chartFilter}`);
+            this.log.info(`Limiting to instances of chart${charts.length > 1 ? 's' : ''}: ${chartFilter}`);
             instancePredicate = ([, deployment]) => chartFilter.includes(deployment.chart);
         }
         else {
-            this.log.info(`\nLimiting to: ${filter.join(', ')}`);
+            this.log.info(`Limiting to: ${filter.join(', ')}`);
             instancePredicate = ([name]) => filter.includes(name);
         }
 
@@ -159,7 +163,7 @@ export class Konfiguration {
 
     logHeader() {
         this.log.info(`konfiguration ${this.konfig.apiVersion}`);
-        this.log.infoBlank()
+        Logger.root.infoBlank()
         this.log.info(`Initializing DP environment '${this.name}'...`);
         this.log.info(`Terraform environment: '${this.konfig.environment.tfEnv}'`);
         this.log.info(`AWS account: '${this.konfig.environment.awsAccount}'`);

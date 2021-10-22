@@ -1,13 +1,13 @@
-import BaseCommand, { CommandInput, Environment, runDtCommand } from '../baseCommand';
+import BaseCommand, { CommandContext, runDtCommand } from '../baseCommand';
 
-export default class K9s extends BaseCommand {
+export default class K9sCommand extends BaseCommand<typeof K9sCommand.flags> {
     static description = "launch k9s in the current environment";
     static strict = false
 
     static flags = BaseCommand.flags;
     static args = BaseCommand.args;
 
-    async command(env: Environment, input: CommandInput<typeof K9s.flags>) {
+    async command({ env, input }: CommandContext<typeof K9sCommand.flags>) {
         const { k8sContext, k8sNamespace } = env.konfig.environment;
 
         this.logger.infoBlank();
