@@ -10,7 +10,7 @@ export default class Logger {
         const logLevel = process.env.KONFIG_LOG ?? "info";
 
         this.logger = name == "root"
-            ? pino({
+            ? pino.final(pino({
                 name: name,
                 level: logLevel,
                 transport: {
@@ -19,7 +19,7 @@ export default class Logger {
                         level: logLevel,
                     }
                 }
-            })
+            }))
             : (parent || Logger.root).logger.child({
                 name
             });
@@ -38,7 +38,7 @@ export default class Logger {
     }
 
     debugBlank(...args: string[]) {
-        Logger.root.debug(' ')
+        Logger.root.debug(' ');
     }
 
     debugYaml(object: any) {

@@ -31,11 +31,11 @@ class HelmClient {
         }
     }
 
-    async updateHelmRepos(shell: InteractiveShell, dryrun:  boolean) {
+    async updateHelmRepos<T extends Flags>({ env, input }: CommandContext<T>) {
         this.log.infoBlank();
         this.log.info(`Updating repositories...`)
 
-        return this.runHelmCommand(shell, dryrun, "repo", "update");
+        return this.runHelmCommand(env.shell, input.flags.dryrun, "repo", "update");
     }
 }
 

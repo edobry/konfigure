@@ -7,7 +7,9 @@ import Logger from "./logger";
 import { CommandContext } from "./commandContext";
 
 export async function processDeployments<T extends Flags>(ctx: CommandContext<T>, chartHandler: (chart: HelmChart<T>) => Promise<void>, skipRepoUpdate?: boolean,) {
-    const deployments = ctx.env.konfig.filterDeployments<T>(ctx.input);
+    const { env, input } = ctx;
+    
+    const deployments = env.konfig.filterDeployments<T>(input);
 
     if(deployments.length == 0) {
         Logger.root.info("No deployments configured, nothing to do. Exiting!")
@@ -15,14 +17,14 @@ export async function processDeployments<T extends Flags>(ctx: CommandContext<T>
     }
 
     // TODO: check if helm charts present
-    if(!ctx.input.flags.testing && !skipRepoUpdate)
-        helmClient.updateHelmRepos(ctx.env.shell, ctx.input.flags.dryrun);
+    if(!input.flags.testing && !skipRepoUpdate)
+        await helmClient.updateHelmRepos(ctx);
 
     const envValues = {
-        region: ctx.env.konfig?.environment.awsRegion,
-        nodegroup: ctx.env.konfig?.environment.eksNodegroup,
+        region: env.konfig?.environment.awsRegion,
+        nodegroup: env.konfig?.environment.eksNodegroup,
         nodeSelector: {
-            "eks.amazonaws.com/nodegroup": ctx.env.konfig?.environment.eksNodegroup
+            "eks.amazonaws.com/nodegroup": env.konfig?.environment.eksNodegroup
         }
     };
     Logger.root.debug("Env values:")
