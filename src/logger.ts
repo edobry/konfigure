@@ -30,7 +30,7 @@ export default class Logger {
     }
 
     infoBlank() {
-        this.info(' ');
+        Logger.root.info(' ');
     }
 
     debug(...args: string[]) {
@@ -38,7 +38,7 @@ export default class Logger {
     }
 
     debugBlank(...args: string[]) {
-        this.debug(' ')
+        Logger.root.debug(' ')
     }
 
     debugYaml(object: any) {

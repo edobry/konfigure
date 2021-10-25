@@ -2,7 +2,7 @@ import { Flags } from "./flags";
 import { CommandInput } from './baseCommand';
 import { Konfiguration } from "./konfiguration";
 import { initDtShell, InteractiveShell } from "./shell";
-import { HelmChart, updateHelmRepos } from "./helm";
+import { HelmChart, helmClient } from "./helm";
 import Logger from "./logger";
 import { CommandContext } from "./commandContext";
 
@@ -16,7 +16,7 @@ export async function processDeployments<T extends Flags>(ctx: CommandContext<T>
 
     // TODO: check if helm charts present
     if(!ctx.input.flags.testing && !skipRepoUpdate)
-        updateHelmRepos(ctx.env.shell, ctx.input.flags.dryrun);
+        helmClient.updateHelmRepos(ctx.env.shell, ctx.input.flags.dryrun);
 
     const envValues = {
         region: ctx.env.konfig?.environment.awsRegion,

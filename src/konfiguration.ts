@@ -86,8 +86,9 @@ export class Konfiguration {
     private deployments: DeploymentMap;
     private log: Logger;
 
-    constructor(public name: string, private envDir: string, private konfig: KonfigProps) {
-        this.log = new Logger(`env/${name}`);
+    constructor(public name: string, private envDir: string,
+         private konfig: KonfigProps) {
+        this.log = new Logger(`Konfiguration:env/${name}`);
         this.deployments = {
             ...mergeChartDefaults(konfig.deployments, konfig.chartDefaults),
             ...parseExternalResources(konfig.externalResources)
@@ -95,7 +96,7 @@ export class Konfiguration {
     }
     
     static async read(envName: string) {
-        Logger.root.infoBlank();
+        konfigLogger.infoBlank();
         konfigLogger.info("Reading konfiguration...");
 
         const currentDir = process.cwd();
@@ -135,7 +136,7 @@ export class Konfiguration {
 
         const filter: string[] = input.argv.slice(1);
 
-        Logger.root.infoBlank();
+        konfigLogger.infoBlank();
         if(filter[0] == "all") {
             this.log.info("Processing all deployments")
             
@@ -163,7 +164,7 @@ export class Konfiguration {
 
     logHeader() {
         this.log.info(`konfiguration ${this.konfig.apiVersion}`);
-        Logger.root.infoBlank()
+        konfigLogger.infoBlank()
         this.log.info(`Initializing DP environment '${this.name}'...`);
         this.log.info(`Terraform environment: '${this.konfig.environment.tfEnv}'`);
         this.log.info(`AWS account: '${this.konfig.environment.awsAccount}'`);

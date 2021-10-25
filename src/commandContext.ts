@@ -46,7 +46,7 @@ export class CommandContext<T extends Flags> {
         const accountRole = "admin"
         const profile = `${account}-${accountRole}`;
         
-        Logger.root.infoBlank();
+        this.log.infoBlank();
         this.log.info("Checking authentication...");
         try {
             if(this.input.flags.auth) {

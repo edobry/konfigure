@@ -7,31 +7,39 @@ import { InteractiveShell } from "./shell";
 import Logger from "./logger";
 import { CommandContext } from "./commandContext";
 
-const helmLogger = new Logger("Helm");
+class HelmClient {
+    private log: Logger;
 
-export async function runHelmCommand(shell: InteractiveShell, dryrun: boolean, ...helmArgs: string[]) {
-    const fullCommand = `helm ${helmArgs.join(' ')}`;
-    
-    Logger.root.debugBlank();
-    helmLogger.debug("Running helm command...")
-    if(dryrun) {
-        helmLogger.info(`dryrun: ${fullCommand}`);
-        return;
+    constructor() {
+        this.log = new Logger(this.constructor.name);
     }
 
-    const { exitcode } = await shell.runCommand(`${fullCommand} 2>&1`);
-    if(exitcode != 0) {
-        helmLogger.error(`Helm command failed with error code ${exitcode}!`);
-        process.exit(1);
+    async runHelmCommand(shell: InteractiveShell, dryrun: boolean, ...helmArgs: string[]) {
+        const fullCommand = `helm ${helmArgs.join(' ')}`;
+        
+        this.log.debugBlank();
+        this.log.debug("Running helm command...")
+        if(dryrun) {
+            this.log.info(`dryrun: ${fullCommand}`);
+            return;
+        }
+
+        const { exitcode } = await shell.runCommand(`${fullCommand} 2>&1`);
+        if(exitcode != 0) {
+            this.log.error(`Helm command failed with error code ${exitcode}!`);
+            process.exit(1);
+        }
     }
-};
 
-export async function updateHelmRepos(shell: InteractiveShell, dryrun:  boolean) {
-    Logger.root.infoBlank();
-    helmLogger.info(`Updating repositories...`)
+    async updateHelmRepos(shell: InteractiveShell, dryrun:  boolean) {
+        this.log.infoBlank();
+        this.log.info(`Updating repositories...`)
 
-    return runHelmCommand(shell, dryrun, "repo", "update");
+        return this.runHelmCommand(shell, dryrun, "repo", "update");
+    }
 }
+
+export const helmClient = new HelmClient();
 
 export class HelmChart<T extends Flags> {
     private log: Logger;
@@ -46,7 +54,7 @@ export class HelmChart<T extends Flags> {
             "--kube-context", k8sContext, "--namespace", k8sNamespace,
             this.name, ...extraArgs];
 
-        return runHelmCommand(this.ctx.env.shell, this.ctx.input.flags.dryrun, ...helmArgs);
+        return helmClient.runHelmCommand(this.ctx.env.shell, this.ctx.input.flags.dryrun, ...helmArgs);
     }
     
     async runChartValuesCommand(...commandArgs: string[]) {
@@ -60,21 +68,21 @@ export class HelmChart<T extends Flags> {
     }
 
     async render() {
-        Logger.root.infoBlank();
+        this.log.infoBlank();
         this.log.info(`Rendering ${this.name}...`)
 
         return this.runChartValuesCommand("template");
     }
     
     async deploy() {
-        Logger.root.infoBlank();
+        this.log.infoBlank();
         this.log.info(`Deploying ${this.name}...`)
 
         return this.runChartValuesCommand("upgrade", "--install");
     }
     
     async uninstall() {
-        Logger.root.infoBlank();
+        this.log.infoBlank();
         this.log.info(`Uninstalling ${this.name}...`)
 
         return this.runChartCommand(["uninstall"]);
