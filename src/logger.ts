@@ -6,18 +6,22 @@ export default class Logger {
 
     protected logger: pino.Logger;
 
-    constructor(module: string, parent?: Logger) {
-        this.logger = module == "root"
+    constructor(name: string, parent?: Logger) {
+        const logLevel = process.env.KONFIG_LOG ?? "info";
+
+        this.logger = name == "root"
             ? pino({
+                name: name,
+                level: logLevel,
                 transport: {
                     target: './pinoPretty.js',
                     options: {
-                        debug: process.env.KONFIG_DEBUG
+                        level: logLevel,
                     }
                 }
             })
             : (parent || Logger.root).logger.child({
-                module
+                name
             });
     }
 
