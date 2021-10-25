@@ -1,4 +1,4 @@
-import { ChildProcessByStdio, CommonOptions, spawn, SpawnOptionsWithoutStdio } from "child_process";
+import { ChildProcess, ChildProcessByStdio, CommonOptions, spawn, SpawnOptions, SpawnOptionsWithoutStdio } from "child_process";
 import internal = require("stream");
 import Logger from "./logger";
 import { readOptionalFile } from "./util";
@@ -13,7 +13,7 @@ type CommandResult = {
 };
 export type Shell = {
     chunks: string[],
-    childShell: ChildProcessByStdio<internal.Writable, internal.Readable, internal.Readable>,
+    childShell: ChildProcess | ChildProcessByStdio<internal.Writable, internal.Readable, internal.Readable>,
     close: () => Promise<CommandResult>,
 }
 export type ControllableShell = Shell & {
@@ -58,18 +58,18 @@ export async function initControllableShell(options?: { command: string }): Prom
         return id;
     };
 
-    shell.childShell.stdout.on("data", (data) => {
+    shell.childShell.stdout?.on("data", (data) => {
         const chunk: string = data.toString();
         Object.values(dataListeners)
             .forEach(f => f(chunk));
 
-        logger.trace(`data: ${data}`)
-        logger.trace(`data length: ${data.length}`)
-        logger.trace(`data end: ${data.codePointAt(data.length-1)}`)
+        logger.trace(`data: ${chunk}`)
+        logger.trace(`data length: ${chunk.length}`)
+        logger.trace(`data end: ${chunk.codePointAt(chunk.length-1)}`)
     }).pipe(process.stdout);
     onData(x => shell.chunks.push(x));
 
-    shell.childShell.stderr.on("data", (data) => {
+    shell.childShell.stderr?.on("data", (data) => {
         const chunk: string = data.toString();
         Object.values(controlListeners)
             .forEach(f => f(chunk));
@@ -89,14 +89,14 @@ export async function initControllableShell(options?: { command: string }): Prom
     }
 };
 
-export async function initShell(options?: { command: string }): Promise<Shell> {
+export async function initShell(options?: { command: string, inheritStdio?: boolean }): Promise<Shell> {
     // TODO: make configurable
     const shell = "bash"; //process.env.SHELL;
     if(!shell)
         throw new Error("$SHELL not defined!");
 
-    const shellOptions: SpawnOptionsWithoutStdio = {
-        stdio: "pipe"
+    const shellOptions: SpawnOptions = {
+        stdio: options?.inheritStdio ? "inherit" : "pipe"
     };
     if(options?.command)
         shellOptions.shell = shell;
@@ -134,7 +134,7 @@ export async function initShell(options?: { command: string }): Promise<Shell> {
         chunks,
         childShell,
         close: () => {
-            childShell.stdin.end();
+            childShell.stdin?.end();
             return shellClose;
         }
     };
@@ -145,8 +145,8 @@ export async function initInteractiveShell(): Promise<InteractiveShell> {
     const shell = await initControllableShell();
     
     return {
-        runCommand: runInteractiveCommand(shell),
-        ...shell
+        ...shell,
+        runCommand: runInteractiveCommand(shell)
     };
 }
 
@@ -177,7 +177,7 @@ const runInteractiveCommand: (shell: ControllableShell) => ShellCommand = (shell
                 shell.unsubControl(controlId);
 
                 if(options?.pipeInput)
-                    process.stdin.unpipe(shell.childShell.stdin);
+                    process.stdin.unpipe(shell.childShell.stdin!);
 
                 res({ exitcode, output: commandDataChunks.join('') });
                 commandDataChunks = [];
@@ -189,7 +189,7 @@ const runInteractiveCommand: (shell: ControllableShell) => ShellCommand = (shell
     });
 
     if(options?.pipeInput) {
-        process.stdin.pipe(shell.childShell.stdin);
+        process.stdin.pipe(shell.childShell.stdin!);
     }
     
     [command, "echo $? >&2", `echo "${TERMINATOR}" >&2`].forEach(x =>
@@ -199,51 +199,10 @@ const runInteractiveCommand: (shell: ControllableShell) => ShellCommand = (shell
 };
 
 export async function runCommand(command: string) {
-    // TODO: make configurable
-    const shell = "bash"; //process.env.SHELL;
-    if(!shell)
-        throw new Error("$SHELL not defined!");
-
-    const childShell = spawn(command, [], {
-        stdio: "inherit",
-        shell
+    const { close } = await initShell({
+        command, inheritStdio: true
     });
-
-    const chunks: string[] = [];
-
-    let latestId = 0;
-    const dataListeners: {
-        [index: string]: (id: string, chunk: string) => void,
-    } = {};
-
-    const exitListeners: ConsumerList<CommandResult> = [];
-    const errorListeners: ConsumerList<CommandResult | Error> = [];
-
-    childShell.on("close", (code) => {
-        logger.debug(`exit: ${code}`);
-
-        const exitcode = code || 0;
-
-        (exitcode == 0
-            ? exitListeners
-            : errorListeners
-        ).forEach((f) =>
-            f({ exitcode, output: chunks.join('') })
-        );
-    });
-
-    childShell.on("error", (err) => {
-        logger.debug(`exit: ${err.message}`)
-
-        errorListeners.forEach((f) => f(err));
-    });
-
-    const shellClose = new Promise<CommandResult>((res, rej) => {
-        exitListeners.push(res);
-        errorListeners.push(rej);
-    });
-
-    return shellClose;
+    return close();
 };
 
 export async function initDtShell() {
