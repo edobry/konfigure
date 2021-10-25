@@ -44,7 +44,7 @@ withPipeline(
 
     withNodejs {
     stage('Build') {
-        sh 'npm install --dev'
+        sh 'npm install --only=dev'
         runLocalDocker(
             imageName: 'node-build',
             version: 'v6.2.0',

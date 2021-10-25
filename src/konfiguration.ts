@@ -220,7 +220,6 @@ function externalResourceToDeployment(resource: ExternalResource): Deployment {
     return {
         chart: "external-service",
         values: { ...resource }
-        
     }
 }
 
