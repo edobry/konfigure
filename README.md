@@ -19,7 +19,7 @@ $ npm install -g konfigure
 $ konfigure COMMAND
 running command...
 $ konfigure (-v|--version|version)
-konfigure/0.0.0 darwin-x64 node-v16.5.0
+konfigure/0.0.0 darwin-x64 node-v16.11.1
 $ konfigure --help [COMMAND]
 USAGE
   $ konfigure COMMAND
@@ -28,28 +28,80 @@ USAGE
 <!-- usagestop -->
 # Commands
 <!-- commands -->
-* [`konfigure hello [FILE]`](#konfigure-hello-file)
+* [`konfigure debugPod ENVIRONMENT`](#konfigure-debugpod-environment)
+* [`konfigure deploy ENVIRONMENT`](#konfigure-deploy-environment)
+* [`konfigure edit ENVIRONMENT`](#konfigure-edit-environment)
 * [`konfigure help [COMMAND]`](#konfigure-help-command)
+* [`konfigure k9s ENVIRONMENT`](#konfigure-k9s-environment)
+* [`konfigure redeploy ENVIRONMENT`](#konfigure-redeploy-environment)
+* [`konfigure render ENVIRONMENT`](#konfigure-render-environment)
+* [`konfigure teardown ENVIRONMENT`](#konfigure-teardown-environment)
 
-## `konfigure hello [FILE]`
+## `konfigure debugPod ENVIRONMENT`
 
-describe the command here
+launch k9s in the current environment
 
 ```
 USAGE
-  $ konfigure hello [FILE]
+  $ konfigure debugPod ENVIRONMENT
+
+ARGUMENTS
+  ENVIRONMENT  the environment to use
 
 OPTIONS
-  -f, --force
-  -h, --help       show CLI help
-  -n, --name=name  name to print
-
-EXAMPLE
-  $ konfigure hello
-  hello world from ./src/hello.ts!
+  -h, --help  show CLI help
+  --auth      automatically authenticate with the appropriate AWS account
+  --cd        running in a CI environment
+  --debug     log out debug information
+  --dryrun    print out commands rather than executing
+  --testing   skip expensive operations during development
 ```
 
-_See code: [src/commands/hello.ts](https://github.com/chainalysis/konfigure/blob/v0.0.0/src/commands/hello.ts)_
+_See code: [src/commands/debugPod.ts](https://github.com/chainalysis/konfigure/blob/v0.0.0/src/commands/debugPod.ts)_
+
+## `konfigure deploy ENVIRONMENT`
+
+deploy instances to the current environment
+
+```
+USAGE
+  $ konfigure deploy ENVIRONMENT
+
+ARGUMENTS
+  ENVIRONMENT  the environment to use
+
+OPTIONS
+  -h, --help  show CLI help
+  --auth      automatically authenticate with the appropriate AWS account
+  --cd        running in a CI environment
+  --debug     log out debug information
+  --dryrun    print out commands rather than executing
+  --testing   skip expensive operations during development
+```
+
+_See code: [src/commands/deploy.ts](https://github.com/chainalysis/konfigure/blob/v0.0.0/src/commands/deploy.ts)_
+
+## `konfigure edit ENVIRONMENT`
+
+launch k9s in the current environment
+
+```
+USAGE
+  $ konfigure edit ENVIRONMENT
+
+ARGUMENTS
+  ENVIRONMENT  the environment to use
+
+OPTIONS
+  -h, --help  show CLI help
+  --auth      automatically authenticate with the appropriate AWS account
+  --cd        running in a CI environment
+  --debug     log out debug information
+  --dryrun    print out commands rather than executing
+  --testing   skip expensive operations during development
+```
+
+_See code: [src/commands/edit.ts](https://github.com/chainalysis/konfigure/blob/v0.0.0/src/commands/edit.ts)_
 
 ## `konfigure help [COMMAND]`
 
@@ -67,4 +119,92 @@ OPTIONS
 ```
 
 _See code: [@oclif/plugin-help](https://github.com/oclif/plugin-help/blob/v3.2.3/src/commands/help.ts)_
+
+## `konfigure k9s ENVIRONMENT`
+
+launch k9s in the current environment
+
+```
+USAGE
+  $ konfigure k9s ENVIRONMENT
+
+ARGUMENTS
+  ENVIRONMENT  the environment to use
+
+OPTIONS
+  -h, --help  show CLI help
+  --auth      automatically authenticate with the appropriate AWS account
+  --cd        running in a CI environment
+  --debug     log out debug information
+  --dryrun    print out commands rather than executing
+  --testing   skip expensive operations during development
+```
+
+_See code: [src/commands/k9s.ts](https://github.com/chainalysis/konfigure/blob/v0.0.0/src/commands/k9s.ts)_
+
+## `konfigure redeploy ENVIRONMENT`
+
+tear down and redeploy instances to the current environment
+
+```
+USAGE
+  $ konfigure redeploy ENVIRONMENT
+
+ARGUMENTS
+  ENVIRONMENT  the environment to use
+
+OPTIONS
+  -h, --help  show CLI help
+  --auth      automatically authenticate with the appropriate AWS account
+  --cd        running in a CI environment
+  --debug     log out debug information
+  --dryrun    print out commands rather than executing
+  --testing   skip expensive operations during development
+```
+
+_See code: [src/commands/redeploy.ts](https://github.com/chainalysis/konfigure/blob/v0.0.0/src/commands/redeploy.ts)_
+
+## `konfigure render ENVIRONMENT`
+
+render instance manifests
+
+```
+USAGE
+  $ konfigure render ENVIRONMENT
+
+ARGUMENTS
+  ENVIRONMENT  the environment to use
+
+OPTIONS
+  -h, --help  show CLI help
+  --auth      automatically authenticate with the appropriate AWS account
+  --cd        running in a CI environment
+  --debug     log out debug information
+  --dryrun    print out commands rather than executing
+  --testing   skip expensive operations during development
+```
+
+_See code: [src/commands/render.ts](https://github.com/chainalysis/konfigure/blob/v0.0.0/src/commands/render.ts)_
+
+## `konfigure teardown ENVIRONMENT`
+
+tears down instances from the current environment
+
+```
+USAGE
+  $ konfigure teardown ENVIRONMENT
+
+ARGUMENTS
+  ENVIRONMENT  the environment to use
+
+OPTIONS
+  -h, --help  show CLI help
+  --auth      automatically authenticate with the appropriate AWS account
+  --cd        running in a CI environment
+  --debug     log out debug information
+  --dryrun    print out commands rather than executing
+  --testing   skip expensive operations during development
+```
+
+_See code: [src/commands/teardown.ts](https://github.com/chainalysis/konfigure/blob/v0.0.0/src/commands/teardown.ts)_
 <!-- commandsstop -->
