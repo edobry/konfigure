@@ -44,13 +44,13 @@ withPipeline(
 
     withNodejs {
     stage('Build') {
-        sh 'npm install --only=dev'
         runLocalDocker(
             imageName: 'node-build',
             version: 'v6.2.0',
             repo: 'dataeng-tools',
             dockerfile: 'node.Dockerfile'
         ) {
+            sh 'npm install'
             sh 'npm run build'
         }
     }
