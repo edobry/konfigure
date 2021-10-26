@@ -14,7 +14,7 @@ export default class Logger {
                 name: name,
                 level: logLevel,
                 transport: {
-                    target: './pinoPretty.js',
+                    target: '../lib/pinoPretty.js',
                     options: {
                         level: logLevel,
                     }

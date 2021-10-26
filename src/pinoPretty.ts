@@ -1,4 +1,4 @@
-module.exports = (opts) =>
+module.exports = (opts: any) =>
     require("pino-pretty")({
         ...opts,
         levelFirst: true,
