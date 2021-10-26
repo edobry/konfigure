@@ -32,6 +32,6 @@ export async function processDeployments<T extends Flags>(ctx: CommandContext<T>
 
     await Promise.all(deployments
         .map(entry =>
-            new HelmChart(...entry, envValues, ctx))
+            new HelmChart<T>(...entry, envValues, ctx))
         .map(chartHandler));
 };
