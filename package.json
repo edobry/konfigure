@@ -1,5 +1,12 @@
 {
-  "name": "konfigure",
+  "name": "@chainalysis/konfigure",
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:chainalysis/konfigure.git"
+  },
+  "publishConfig": {
+    "registry": "https://fimbulvetr.chainalysis.com/artifactory/api/npm/npm/"
+  },
   "version": "0.0.0",
   "author": "Eugene Dobry @edobry",
   "bin": {
@@ -38,7 +45,6 @@
       "@oclif/plugin-help"
     ]
   },
-  "repository": "chainalysis/konfigure",
   "scripts": {
     "posttest": "eslint . --ext .ts --config .eslintrc",
     "test": "echo NO TESTS",
