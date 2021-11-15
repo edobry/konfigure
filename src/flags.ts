@@ -41,4 +41,4 @@ export const instanceArg = {
 
 export const commonArgs = [envArg]
 
-export type Flags = { [index: string]: parserFlags.IBooleanFlag<any> }
+export type Flags = { [index: string]: parserFlags.IFlag<any> }
