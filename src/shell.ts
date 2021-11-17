@@ -209,7 +209,11 @@ export async function initDtShell() {
     const shell = await initInteractiveShell();
     
     logger.debug("initializing dataeng-tools...")
-    await shell.runCommand(`source ${await findDtInitScript()}`);
+    try {
+        await shell.runCommand(`source ${await findDtInitScript()}`);
+    } catch (e) {
+        Logger.root.debug((e as any).toString())
+    }
 
     return shell;
 };

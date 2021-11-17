@@ -40,7 +40,6 @@ export default abstract class BaseCommand<T extends Flags> extends Command {
     }
 
     async run() {
-
         await this.command(this.ctx!);
     }
 
