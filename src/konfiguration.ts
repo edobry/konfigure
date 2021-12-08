@@ -86,8 +86,7 @@ export class Konfiguration {
     private deployments: DeploymentMap;
     private log: Logger;
 
-    constructor(public name: string, private envDir: string,
-         private konfig: KonfigProps) {
+    constructor(public name: string, private envDir: string, private konfig: KonfigProps) {
         this.log = new Logger(`Konfiguration:env/${name}`);
         this.deployments = {
             ...mergeChartDefaults(konfig.deployments, konfig.chartDefaults),
@@ -102,7 +101,12 @@ export class Konfiguration {
         const currentDir = process.cwd();
         const envDir = path.join(currentDir, `env/${envName}`);
 
-        const konfig = await readFile(path.join(envDir, "konfig.json"));
+        let konfig: ValuesMap;
+        try {
+            konfig = await readFile(path.join(envDir, "konfig.json"));
+        } catch(e) {
+            konfig = await readFile(path.join(envDir, "config.json"));
+        }
         // TODO: implement file schema validation
         return new Konfiguration(envName, envDir, konfig as unknown as KonfigProps);
     }
