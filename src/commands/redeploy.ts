@@ -8,6 +8,8 @@ export default class RedeployCommand extends BaseCommand<typeof RedeployCommand.
     static args = BaseCommand.args;
 
     async command(ctx: CommandContext<typeof RedeployCommand.flags>) {
+        await ctx.handleAuth();
+
         await processDeployments(ctx,
             async chart => {
                 await chart.uninstall();

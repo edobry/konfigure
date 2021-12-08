@@ -36,9 +36,7 @@ export class CommandContext<T extends Flags> {
 
         const shell = await initDtShell();
 
-        const context = new CommandContext(log, input, { konfig, shell });
-        await context.handleAuth();
-        return context;
+        return new CommandContext(log, input, { konfig, shell });
     }
 
     async handleAuth() {
