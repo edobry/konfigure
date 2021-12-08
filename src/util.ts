@@ -145,4 +145,12 @@ const obsidianTheme: Theme = {
 
 export function prettyPrintYaml(values: object): string {
     return highlight(yaml.dump(values), { language: "yaml", theme: obsidianTheme })
+};
+
+export function fromEntries<V>(entries: [string, V][]) {
+    return entries.reduce((acc, [k, v]) => {
+        acc[k] = v;
+        console.log(acc);
+        return acc;
+    }, {} as Record<string, V>)
 }

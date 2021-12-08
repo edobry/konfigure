@@ -3,9 +3,11 @@ import { Flags } from "./flags";
 
 import * as tmp from "tmp-promise";
 import * as fs from "fs-extra";
+import { basename } from "path";
 import { InteractiveShell } from "./shell";
 import Logger from "./logger";
 import { CommandContext } from "./commandContext";
+import { fromEntries } from "./util";
 
 class HelmClient {
     private log: Logger;
@@ -69,9 +71,26 @@ export class HelmChart<T extends Flags> {
 
     async render() {
         this.log.infoBlank();
-        this.log.info(`Rendering ${this.name}...`)
+        this.log.info(`Rendering ${this.name}...`);
+        
+        const { path, cleanup } = await tmp.dir({
+            template: "tmp-helm-XXXXXX",
+            unsafeCleanup: true
+        });
 
-        return this.runChartValuesCommand("template");
+        await this.runChartValuesCommand("template", `--output-dir ${path}`);
+
+        this.log.info(`Reading output directory ${path}...`);
+        const filenames = await fs.readdir(`${path}/${basename(this.dep.chart)}/templates`);
+        const files = fromEntries(await Promise.all(
+            filenames.map(async x =>
+                [x, await fs.readFile(`${path}/${basename(this.dep.chart)}/templates/${x}`, "utf-8")] as [string, string])));
+        await cleanup();
+
+        Object.entries(files).forEach(([name, file]) => {
+            this.log.info(`Rendered manifest ${name}:`);
+            this.log.info(file);
+        });
     }
     
     async deploy() {
@@ -125,13 +144,14 @@ export class HelmChart<T extends Flags> {
     }
 
     async writeValueFile(values: object) {
-        const { fd, path, cleanup } = await tmp.file({ template: 'tmp-XXXXXX.json' });
+        const { fd, path, cleanup } = await tmp.file({ template: "tmp-XXXXXX.json" });
 
         this.log.debug(`Writing values file ${path}...`)
         this.log.debugYaml(values);
 
         const { bytesWritten, buffer } = await fs.write(fd, Buffer.from(JSON.stringify(values)))
-
+        // await cleanup();
+        
         return path;
     }
 }
