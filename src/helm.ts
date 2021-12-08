@@ -80,7 +80,7 @@ export class HelmChart<T extends Flags> {
 
         await this.runChartValuesCommand("template", `--output-dir ${path}`);
 
-        this.log.info(`Reading output directory ${path}...`);
+        this.log.debug(`Reading output directory ${path}`);
         const filenames = await fs.readdir(`${path}/${basename(this.dep.chart)}/templates`);
         const files = fromEntries(await Promise.all(
             filenames.map(async x =>
