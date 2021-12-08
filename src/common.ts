@@ -6,7 +6,7 @@ import { HelmChart, helmClient } from "./helm";
 import Logger from "./logger";
 import { CommandContext } from "./commandContext";
 
-export async function processDeployments<T extends Flags>(ctx: CommandContext<T>, chartHandler: (chart: HelmChart<T>) => Promise<void>, skipRepoUpdate?: boolean,) {
+export async function processDeployments<T extends Flags>(ctx: CommandContext<T>, chartHandler: (chart: HelmChart<T>) => Promise<any>, skipRepoUpdate?: boolean,) {
     const { env, input } = ctx;
     
     const deployments = env.konfig.filterDeployments<T>(input);

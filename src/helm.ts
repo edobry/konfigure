@@ -14,8 +14,8 @@ class HelmClient {
         this.log = new Logger(this.constructor.name);
     }
 
-    async runHelmCommand(shell: InteractiveShell, dryrun: boolean, ...helmArgs: string[]) {
-        const fullCommand = `helm ${helmArgs.join(' ')}`;
+    async runHelmCommand(shell: InteractiveShell, dryrun: boolean, debug: boolean, ...helmArgs: string[]) {
+        const fullCommand = `helm ${debug ? "--debug " : ""}${helmArgs.join(' ')}`;
         
         this.log.debugBlank();
         this.log.debug("Running helm command...")
@@ -24,7 +24,7 @@ class HelmClient {
             return;
         }
 
-        const { exitcode } = await shell.runCommand(`${fullCommand} 2>&1`);
+        const { exitcode, output } = await shell.runCommand(`${fullCommand} 2>&1`);
         if(exitcode != 0) {
             this.log.error(`Helm command failed with error code ${exitcode}!`);
             process.exit(1);
@@ -35,7 +35,7 @@ class HelmClient {
         this.log.infoBlank();
         this.log.info(`Updating repositories...`)
 
-        return this.runHelmCommand(env.shell, input.flags.dryrun, "repo", "update");
+        return this.runHelmCommand(env.shell, input.flags.dryrun, input.flags.debug, "repo", "update");
     }
 }
 
@@ -54,7 +54,7 @@ export class HelmChart<T extends Flags> {
             "--kube-context", k8sContext, "--namespace", k8sNamespace,
             this.name, ...extraArgs];
 
-        return helmClient.runHelmCommand(this.ctx.env.shell, this.ctx.input.flags.dryrun, ...helmArgs);
+        return helmClient.runHelmCommand(this.ctx.env.shell, this.ctx.input.flags.dryrun, this.ctx.input.flags.debug, ...helmArgs);
     }
     
     async runChartValuesCommand(...commandArgs: string[]) {
