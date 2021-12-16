@@ -1,8 +1,11 @@
+import * as k8s from "@kubernetes/client-node";
+
 import BaseCommand, { CommandInput } from "./baseCommand";
 import { Flags } from "./flags";
 import { Konfiguration } from "./konfiguration";
 import Logger from "./logger";
 import { initDtShell, InteractiveShell } from "./shell";
+import { UnpackAny } from "./util";
 
 export type Environment = {
     konfig: Konfiguration,
@@ -37,6 +40,56 @@ export class CommandContext<T extends Flags> {
         const shell = await initDtShell();
 
         return new CommandContext(log, input, { konfig, shell });
+    }
+
+    async initNamespace() {
+        const kc = new k8s.KubeConfig();
+        kc.loadFromFile(`${process.env.CA_DT_DIR}/shell/eksconfig.yaml`)
+        
+        let k8sApi: k8s.CoreV1Api;
+        try {
+            kc.setCurrentContext(this.env.konfig.environment.k8sContext);
+            k8sApi = kc.makeApiClient(k8s.CoreV1Api);
+        } catch(e) {
+            this.log.error(e as string);
+            process.exit(1);
+        }
+
+        const name = this.env.konfig.name;
+
+        try {
+            this.log.debug("fetching namespace");
+            const namespace = await k8sApi.readNamespace(name);
+            this.log.debug(JSON.stringify(namespace));
+            return;
+        } catch(e) {
+            const { response: { statusCode, body } } = e as UnpackAny<ReturnType<typeof k8sApi.readNamespace>>;
+            
+            const msg = `HTTP ${statusCode}: ${body.message}`;
+            if(statusCode == 404)
+                this.log.debug(msg);
+            else {
+                this.log.error(msg);
+                this.log.error(JSON.stringify(e));
+                throw e;
+            }
+        }
+
+        try {
+            this.log.infoBlank();
+            this.log.info(`Initializing environment '${name}'...`);
+            this.log.info("Creating namespace...");
+
+            const { response, body } = await k8sApi.createNamespace({
+                metadata: { name: name }
+            });
+
+            this.log.info(`Environment initialized!`);
+            this.log.debugYaml(response.body);
+        } catch(e) {
+            this.log.error("Namespace creation failed!");
+            this.log.error(JSON.stringify(e));
+        }
     }
 
     async handleAuth() {

@@ -146,6 +146,9 @@ const obsidianTheme: Theme = {
 export function prettyPrintYaml(values: object): string {
     return highlight(yaml.dump(values), { language: "yaml", theme: obsidianTheme })
 };
+export function prettyPrintJson(values: object): string {
+    return highlight(JSON.stringify(values, null, 4), { language: "json", theme: obsidianTheme })
+};
 
 export function fromEntries<V>(entries: [string, V][]) {
     return entries.reduce((acc, [k, v]) => {
@@ -153,3 +156,5 @@ export function fromEntries<V>(entries: [string, V][]) {
         return acc;
     }, {} as Record<string, V>)
 }
+
+export type UnpackAny<T> = T extends Promise<infer U> ? U: T;

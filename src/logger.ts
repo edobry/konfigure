@@ -1,5 +1,5 @@
 import pino from "pino";
-import { prettyPrintYaml } from "./util";
+import { prettyPrintJson, prettyPrintYaml } from "./util";
 
 export default class Logger {
     static root: Logger = new Logger("root");
@@ -43,6 +43,10 @@ export default class Logger {
 
     debugYaml(object: any) {
         this.logger.debug(prettyPrintYaml(object));
+    }
+
+    debugJson(object: any) {
+        this.logger.debug(prettyPrintJson(object));
     }
 
     trace(...args: string[]) {
