@@ -9,7 +9,7 @@ import Logger from "./logger";
 
 type DeploymentMap = { [index: string]: Deployment };
 
-interface KonfigProps {
+export interface KonfigProps {
     apiVersion: string,
     environment: Environment,
     chartDefaults: DeploymentMap
@@ -18,7 +18,7 @@ interface KonfigProps {
 }
 
 interface Environment {
-    name: string,
+    name?: string,
     tfEnv: string,
     tfModule: string,
     awsAccount: string,
@@ -43,8 +43,8 @@ interface NamedDeployment extends Deployment {
 }
 
 interface ExternalResources {
-    secretPresets:  { [index: string]: object },
-    deployments:  { [index: string]: ExternalResource }
+    secretPresets?: { [index: string]: object },
+    deployments: { [index: string]: ExternalResource }
 }
 
 export type ValuesMap = { [index: string]: string | number | ValuesMap };
@@ -64,7 +64,7 @@ function parseExternalResources(resources: ExternalResources): DeploymentMap {
         chart: "external-service",
         values: {
             ...resource,
-            ...resources.secretPresets[resource.$secretPreset]
+            ...(resources.secretPresets || {})[resource.$secretPreset]
         } as unknown as ValuesMap
     }]));
 }
@@ -162,7 +162,7 @@ export class Konfiguration {
         return Object.entries(this.deployments)
             .filter(instancePredicate)
             .filter(([, { disabled, cdDisabled }]) => {
-                return !disabled && !(input.flags.cd && cdDisabled)
+                return !disabled && !(input.flags.cd && cdDisabled);
             });
     }
 
