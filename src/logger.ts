@@ -53,6 +53,10 @@ export default class Logger {
         this.logger.trace(args);
     }
 
+    warn(...args: string[]) {
+        this.logger.warn(args);
+    }
+
     error(...args: string[]) {
         this.logger.error(args);
     }

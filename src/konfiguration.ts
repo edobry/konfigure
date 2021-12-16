@@ -161,7 +161,7 @@ export class Konfiguration {
             this.log.info("Processing all deployments")
             
             if(filter.length > 1)
-                console.warn("Additional instances specified after 'all' keyword, will be ignored.\n")
+                this.log.warn("Additional instances specified after 'all' keyword, will be ignored.");
             
             instancePredicate = () => true;
         } else if(filter[0] == "chart") {
