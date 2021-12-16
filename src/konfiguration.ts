@@ -8,6 +8,7 @@ import { Flags } from "./flags";
 import Logger from "./logger";
 
 type DeploymentMap = { [index: string]: Deployment };
+type InstanceMap = { [index: string]: Instance };
 
 export interface KonfigProps {
     apiVersion: string,
@@ -28,6 +29,21 @@ interface Environment {
     eksNodegroup: string
 }
 
+export class Instance {
+    constructor(public name: string, private dep: Deployment) {}
+
+    get chart() {
+        return this.dep.source == "local"
+            ? path.basename(this.dep.chart)
+            : this.dep.chart;
+    }
+
+    isEnabled(input: CommandInput<any>): boolean {
+        const { disabled, cdDisabled } = this.dep;
+
+        return !disabled && !(input.flags.cd && cdDisabled);
+    }
+}
 export interface Deployment {
     chart: string,
     type?: "helm" | "cdk8s"
@@ -59,37 +75,37 @@ interface ExternalResource {
     $secretPreset: string
 }
 
-function parseExternalResources(resources: ExternalResources): DeploymentMap {
-    return Object.fromEntries(Object.entries(resources.deployments).map(([name, resource]) => [name, {
+function parseInstances(konfig: KonfigProps): InstanceMap {
+    return Object.fromEntries(Object.entries(konfig.deployments).map(([name, deployment]) => {
+        const { values = {}, ...chartDefaults } = konfig.chartDefaults[deployment.chart] || {};
+
+        return [name, new Instance(name, {
+            ...chartDefaults,
+            ...deployment
+        })]
+    }));
+}
+
+function parseExternalResources(resources: ExternalResources): InstanceMap {
+    return Object.fromEntries(Object.entries(resources.deployments).map(([name, resource]) => [name, new Instance(name, {
         chart: "external-service",
         values: {
             ...resource,
             ...(resources.secretPresets || {})[resource.$secretPreset]
         } as unknown as ValuesMap
-    }]));
-}
-
-function mergeChartDefaults(deployments: DeploymentMap, defaults: DeploymentMap): DeploymentMap {
-    return Object.fromEntries(Object.entries(deployments).map(([name, deployment]) => {
-        const { values = {}, ...chartDefaults } = defaults[deployment.chart] || {};
-
-        return [name, {
-            ...chartDefaults,
-            ...deployment
-        }]
-    }));
+    })]));
 }
 
 const konfigLogger = new Logger("Konfiguration");
 
 export class Konfiguration {
-    private deployments: DeploymentMap;
+    private instances: InstanceMap;
     private log: Logger;
 
     constructor(public name: string, private envDir: string, private konfig: KonfigProps) {
         this.log = new Logger(`Konfiguration:env/${name}`);
-        this.deployments = {
-            ...mergeChartDefaults(konfig.deployments, konfig.chartDefaults),
+        this.instances = {
+            ...parseInstances(konfig),
             ...parseExternalResources(konfig.externalResources)
         }
     }
@@ -152,18 +168,17 @@ export class Konfiguration {
             const charts = filter.slice(1);
             const chartFilter = charts.join(', ');
             this.log.info(`Limiting to instances of chart${charts.length > 1 ? 's' : ''}: ${chartFilter}`);
-            instancePredicate = ([, deployment]) => chartFilter.includes(deployment.chart);
+            instancePredicate = ([, instance]) => chartFilter.includes(instance.chart);
         }
         else {
             this.log.info(`Limiting to: ${filter.join(', ')}`);
             instancePredicate = ([name]) => filter.includes(name);
         }
 
-        return Object.entries(this.deployments)
+        return Object.entries(this.instances)
             .filter(instancePredicate)
-            .filter(([, { disabled, cdDisabled }]) => {
-                return !disabled && !(input.flags.cd && cdDisabled);
-            });
+            .filter(([, instance]) =>
+                instance.isEnabled(input));
     }
 
     logHeader() {

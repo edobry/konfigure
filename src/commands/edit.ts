@@ -11,7 +11,7 @@ export default class EditCommand extends BaseCommand<typeof EditCommand.flags> {
         console.log(`Opening konfig for environment '${env.konfig.name}' in editor...`);
 
         try {
-            await runCommand(`$EDITOR env/${env.konfig.name}/konfig.json`);
+            await runCommand(`$EDITOR env/${env.konfig.name}/config.json`);
         } catch(e) {
             console.log(e);
         }

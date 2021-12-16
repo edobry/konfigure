@@ -92,7 +92,7 @@ export class HelmChart<T extends Flags> {
             this.log.info(file);
         });
     }
-    
+
     async deploy() {
         this.log.infoBlank();
         this.log.info(`Deploying ${this.name}...`)
