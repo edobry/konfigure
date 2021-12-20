@@ -1,4 +1,4 @@
-import { KonfigProps, Konfiguration } from "../src/konfiguration";
+import { KonfigProps, Konfiguration, ValuesMap } from "../src/konfiguration";
 
 const awsRegion = "eu-west-1";
 const testEnvName = "test-env";
@@ -13,6 +13,9 @@ const dep2Name = "dep2";
 const dep3Name = "dep3";
 const dep4Name = "dep4";
 const dep5Name = "dep5";
+
+const secretPreset1Name = "secretPreset1";
+const externalResource1Name = "externalResource1";
 
 const testEnvConfig: KonfigProps = {
     apiVersion: "v4.15.0",
@@ -52,15 +55,55 @@ const testEnvConfig: KonfigProps = {
         },
     },
     externalResources: {
-        deployments: {},
+        secretPresets: {
+            [secretPreset1Name]: {
+                username: `/test/${secretPreset1Name}/username`,
+                password: `/test/${secretPreset1Name}/password`
+            }
+        },
+        deployments: {
+            [externalResource1Name]: {
+                service: {
+                    name: "my-service-name.com"
+                },
+                "$secretPreset": secretPreset1Name
+            }
+        },
     },
 };
+
 
 const dummyCommand = "a-command";
 
 test("parses konfig", () => {
     expect(new Konfiguration(testEnvName, testEnvDir, testEnvConfig)).toBeInstanceOf(Konfiguration);
 });
+
+test("parseInstances: handles local chart path", () => {
+    const instances = Konfiguration.parseInstances(testEnvConfig);
+
+    expect(instances[dep5Name].chart).toEqual(chart3Name);
+});
+
+test("parseExternalResources: handles secretPresets", () => {
+    const resources = Konfiguration.parseExternalResources(testEnvConfig.externalResources);
+
+    const secretPreset1: object = {
+        externalSecrets: testEnvConfig.externalResources?.secretPresets![secretPreset1Name]
+    };
+
+    expect(
+        resources[externalResource1Name].dep.values
+    ).toMatchObject(secretPreset1);
+});
+
+// test("parseInstances: handles local chart path", () => {
+//     const instances = Konfiguration.parseInstances(testEnvConfig);
+
+//     expect(
+//         instances[dep1Name].dep.version
+//     ).toHaveLength(4);
+// });
 
 test("filterDeployments: matches all", () => {
     const konfig = new Konfiguration(testEnvName, testEnvDir, testEnvConfig);
@@ -71,7 +114,7 @@ test("filterDeployments: matches all", () => {
             args: {},
             flags: {}
         })
-    ).toHaveLength(4);
+    ).toHaveLength(5);
 });
 
 test("filterDeployments: matches by chart", () => {

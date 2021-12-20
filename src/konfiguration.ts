@@ -30,7 +30,7 @@ interface Environment {
 }
 
 export class Instance {
-    constructor(public name: string, private dep: Deployment) {}
+    constructor(public name: string, public dep: Deployment) {}
 
     get chart() {
         return this.dep.source == "local"
@@ -66,34 +66,13 @@ interface ExternalResources {
 export type ValuesMap = { [index: string]: string | number | ValuesMap };
 
 interface ExternalResource {
-    service: {
+    service?: {
         name?: string,
         address?: string,
         port?: number
     },
-    externalSecrets: ValuesMap,
-    $secretPreset: string
-}
-
-function parseInstances(konfig: KonfigProps): InstanceMap {
-    return Object.fromEntries(Object.entries(konfig.deployments).map(([name, deployment]) => {
-        const { values = {}, ...chartDefaults } = konfig.chartDefaults[deployment.chart] || {};
-
-        return [name, new Instance(name, {
-            ...chartDefaults,
-            ...deployment
-        })]
-    }));
-}
-
-function parseExternalResources(resources: ExternalResources): InstanceMap {
-    return Object.fromEntries(Object.entries(resources.deployments).map(([name, resource]) => [name, new Instance(name, {
-        chart: "external-service",
-        values: {
-            ...resource,
-            ...(resources.secretPresets || {})[resource.$secretPreset]
-        } as unknown as ValuesMap
-    })]));
+    externalSecrets?: ValuesMap,
+    $secretPreset?: string
 }
 
 const konfigLogger = new Logger("Konfiguration");
@@ -105,9 +84,9 @@ export class Konfiguration {
     constructor(public name: string, private envDir: string, private konfig: KonfigProps) {
         this.log = new Logger(`Konfiguration:env/${name}`);
         this.instances = {
-            ...parseInstances(konfig),
-            ...parseExternalResources(konfig.externalResources)
-        }
+            ...Konfiguration.parseInstances(konfig),
+            ...Konfiguration.parseExternalResources(konfig.externalResources),
+        };
     }
     
     static async read(envName: string) {
@@ -125,6 +104,28 @@ export class Konfiguration {
         }
         // TODO: implement file schema validation
         return new Konfiguration(envName, envDir, konfig as unknown as KonfigProps);
+    }
+
+    static parseInstances(konfig: KonfigProps): InstanceMap {
+        return Object.fromEntries(Object.entries(konfig.deployments).map(([name, deployment]) => {
+            const { values = {}, ...chartDefaults } = konfig.chartDefaults[deployment.chart] || {};
+
+            return [name, new Instance(name, {
+                ...chartDefaults,
+                ...deployment
+            })]
+        }));
+    }
+
+    static parseExternalResources(resources: ExternalResources): InstanceMap {
+        return Object.fromEntries(Object.entries(resources.deployments).map(([name, resource]) => [name, new Instance(name, {
+            chart: "external-service",
+            values: {
+                ...resource,
+                // TODO: test this
+                ...(resource.$secretPreset ? (resources.secretPresets || {})[resource.$secretPreset] : {})
+            } as unknown as ValuesMap
+        })]));
     }
 
     async readChartDefaultValues(chart: string) {
