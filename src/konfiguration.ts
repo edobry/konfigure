@@ -123,7 +123,7 @@ export class Konfiguration {
             values: {
                 ...resource,
                 // TODO: test this
-                ...(resource.$secretPreset ? (resources.secretPresets || {})[resource.$secretPreset] : {})
+                externalSecrets: (resource.$secretPreset ? (resources.secretPresets || {})[resource.$secretPreset] : {})
             } as unknown as ValuesMap
         })]));
     }
