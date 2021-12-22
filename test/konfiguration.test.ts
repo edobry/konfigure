@@ -1,152 +1,252 @@
-import { KonfigProps, Konfiguration, ValuesMap } from "../src/konfiguration";
+import { Deployment, ExternalResource, KonfigProps, Konfiguration, ValuesMap } from "../src/konfiguration";
+import { deepSet } from "../src/util";
 
 const awsRegion = "eu-west-1";
 const testEnvName = "test-env";
 const testEnvDev = `${testEnvName}-dev`;
 const testEnvDir = `env/${testEnvName}`;
 
-const chart1Name = "chart1";
-const chart2Name = "chart2";
-const chart3Name = "chart3";
-const dep1Name = "dep1";
-const dep2Name = "dep2";
-const dep3Name = "dep3";
-const dep4Name = "dep4";
-const dep5Name = "dep5";
+const resourceName = (name: string) => (id: number) => `${name}${id}`;
 
-const secretPreset1Name = "secretPreset1";
-const externalResource1Name = "externalResource1";
+const chart = resourceName("chart");
+const dep = resourceName("dep");
+const secretPreset = resourceName("secretPreset");
+const externalResource = resourceName("externalResource");
 
-const testEnvConfig: KonfigProps = {
-    apiVersion: "v4.15.0",
-    environment: {
-        tfEnv: testEnvDev,
-        tfModule: testEnvDev,
-        awsAccount: testEnvDev,
-        awsRegion,
-        k8sContext: `${testEnvName}-nonprod`,
-        k8sNamespace: testEnvDev,
-        eksNodegroup: `${testEnvName}-${awsRegion}a-workers`,
-    },
-    chartDefaults: {
-        chart1: {
-            chart: chart1Name,
-            version: "1.1.0",
-        },
-    },
-    deployments: {
-        [dep1Name]: {
-            chart: chart1Name,
-        },
-        [dep2Name]: {
-            chart: chart2Name,
-        },
-        [dep3Name]: {
-            chart: chart1Name,
-            cdDisabled: true,
-        },
-        [dep4Name]: {
-            chart: chart2Name,
-            disabled: true,
-        },
-        [dep5Name]: {
-            chart: `/local/path/to/${chart3Name}`,
-            source: "local",
-        },
-    },
-    externalResources: {
-        secretPresets: {
-            [secretPreset1Name]: {
-                username: `/test/${secretPreset1Name}/username`,
-                password: `/test/${secretPreset1Name}/password`
-            }
-        },
-        deployments: {
-            [externalResource1Name]: {
-                service: {
-                    name: "my-service-name.com"
-                },
-                "$secretPreset": secretPreset1Name
-            }
-        },
-    },
+const testKeyName = "testKey";
+const overriddenValues = { [testKeyName]: "overriddenValue" };
+
+const testEnv = {
+    tfEnv: testEnvDev,
+    tfModule: testEnvDev,
+    awsAccount: testEnvDev,
+    awsRegion,
+    k8sContext: `${testEnvName}-nonprod`,
+    k8sNamespace: testEnvDev,
+    eksNodegroup: `${testEnvName}-${awsRegion}a-workers`,
 };
+const testEnvConfig = (): KonfigProps => ({
+    apiVersion: "v4.15.0",
+    environment: testEnv,
+    chartDefaults: {},
+    deployments: {},
+    externalResources: {
+        secretPresets: {},
+        deployments: {}
+    },
+});
 
-
+const x = {
+    [dep(1)]: {
+        chart: chart(1)
+    },
+    [dep(2)]: {
+        chart: chart(2)
+    },
+    [dep(3)]: {
+        chart: chart(1),
+        cdDisabled: true
+    },
+    [dep(4)]: {
+        chart: chart(2),
+        disabled: true
+    }
+};
 const dummyCommand = "a-command";
 
 test("parses konfig", () => {
-    expect(new Konfiguration(testEnvName, testEnvDir, testEnvConfig)).toBeInstanceOf(Konfiguration);
+    expect(new Konfiguration(testEnvName, testEnvDir, testEnvConfig())).toBeInstanceOf(Konfiguration);
 });
 
-test("parseInstances: handles local chart path", () => {
-    const instances = Konfiguration.parseInstances(testEnvConfig);
+type Mapper<T> = (x: T) => T;
+type KonfigMapper = Mapper<KonfigProps>;
 
-    expect(instances[dep5Name].chart).toEqual(chart3Name);
+const testKonfig = (...konfigMappers: Mapper<KonfigProps>[]) =>
+    new Konfiguration(testEnvName, testEnvDir,
+        konfigMappers.reduce(
+            (acc, map) => map(acc),
+            testEnvConfig()));
+
+const addChart = (id: number, chartProps: Deployment): KonfigMapper =>
+    (props: KonfigProps) => {
+        props.chartDefaults[chart(id)] = chartProps;
+        return props;
+    };
+
+const addDeployment = (id: number, depProps: Deployment): KonfigMapper =>
+    (props: KonfigProps) => {
+        props.deployments[dep(id)] = depProps;
+        return props;
+    };
+
+const addExternalResource = (id: number, resourceProps: ExternalResource): KonfigMapper =>
+    (props: KonfigProps) => {
+        props.externalResources.deployments[externalResource(id)] = resourceProps;
+        return props;
+    };
+
+const addSecretPreset = (id: number, presetProps: ValuesMap): KonfigMapper =>
+    (props: KonfigProps) => {
+        deepSet(props, presetProps, "externalResources", "secretPresets", secretPreset(id));
+        return props;
+    };
+
+test("parseInstances: handles local chart path", () => {
+    expect(
+        testKonfig(addDeployment(1, {
+            chart: `/local/path/to/${chart(1)}`,
+            source: "local",
+        })).instances[dep(1)].chart
+    ).toEqual(chart(1));
 });
 
 test("parseExternalResources: handles secretPresets", () => {
-    const resources = Konfiguration.parseExternalResources(testEnvConfig.externalResources);
-
-    const secretPreset1: object = {
-        externalSecrets: testEnvConfig.externalResources?.secretPresets![secretPreset1Name]
+    const secretPreset1 = {
+        username: `/test/${secretPreset(1)}/username`,
+        password: `/test/${secretPreset(1)}/password`,
     };
 
+    const konfig = testKonfig(
+        addSecretPreset(1, secretPreset1),
+        addExternalResource(1, {
+            service: {
+                name: "my-service-name.com",
+            },
+            $secretPreset: secretPreset(1),
+        })
+    );
+
     expect(
-        resources[externalResource1Name].dep.values
-    ).toMatchObject(secretPreset1);
+        konfig.instances[externalResource(1)].dep.values
+    ).toMatchObject({
+        externalSecrets: secretPreset1
+    });
 });
 
-// test("parseInstances: handles local chart path", () => {
-//     const instances = Konfiguration.parseInstances(testEnvConfig);
+test("Instance.prepareValues: chart default values inherited", async () => {
+    expect(
+        await testKonfig(
+            addChart(1, {
+                chart: chart(1),
+                version: "1.1.0",
+            }),
+            addDeployment(1, {
+                chart: chart(1),
+            })
+        ).instances[dep(1)].prepareValues({}, overriddenValues)
+    ).toContain(overriddenValues);
+});
 
-//     expect(
-//         instances[dep1Name].dep.version
-//     ).toHaveLength(4);
-// });
-
-test("filterDeployments: matches all", () => {
-    const konfig = new Konfiguration(testEnvName, testEnvDir, testEnvConfig);
+test("Instance.prepareValues: inline chart default values override extenral chart default values", async () => {
+    const chartInlineValues = { [testKeyName]: "testValue" };
 
     expect(
-        konfig.filterDeployments({
+        await testKonfig(
+            addChart(1, {
+                chart: chart(1),
+                version: "1.1.0",
+                values: chartInlineValues,
+            }),
+            addDeployment(1, {
+                chart: chart(1),
+            })
+        ).instances[dep(1)].prepareValues({}, overriddenValues)
+    ).toContain(chartInlineValues);
+});
+
+test("filterDeployments: matches all", () => {
+    expect(
+        testKonfig(
+            addChart(1, {
+                chart: chart(1)
+            }),
+            addDeployment(1, {
+                chart: chart(1),
+            }),
+            addDeployment(2, {
+                chart: chart(1),
+            }),
+            addDeployment(3, {
+                chart: chart(1),
+            }),
+            addDeployment(4, {
+                chart: chart(1),
+            }),
+            addDeployment(5, {
+                chart: chart(1),
+            })
+        ).filterDeployments({
             argv: [dummyCommand, "all"],
             args: {},
-            flags: {}
+            flags: {},
         })
     ).toHaveLength(5);
 });
 
 test("filterDeployments: matches by chart", () => {
-    const konfig = new Konfiguration(testEnvName, testEnvDir, testEnvConfig);
-
     expect(
-        konfig.filterDeployments({
-            argv: [dummyCommand, "chart", chart1Name],
+        testKonfig(
+            addChart(1, {
+                chart: chart(1)
+            }),
+            addChart(2, {
+                chart: chart(2)
+            }),
+            addDeployment(1, {
+                chart: chart(1),
+            }),
+            addDeployment(2, {
+                chart: chart(2),
+            })
+        ).filterDeployments({
+            argv: [dummyCommand, "chart", chart(1)],
             args: {},
             flags: {}
+        })
+    ).toHaveLength(1);
+});
+
+test("filterDeployments: matches by multiple charts", () => {
+    expect(
+        testKonfig(
+            addChart(1, {
+                chart: chart(1),
+            }),
+            addChart(2, {
+                chart: chart(2),
+            }),
+            addChart(3, {
+                chart: chart(3),
+            }),
+            addDeployment(1, {
+                chart: chart(1),
+            }),
+            addDeployment(2, {
+                chart: chart(2),
+            }),
+            addDeployment(3, {
+                chart: chart(3),
+            })
+        ).filterDeployments({
+            argv: [dummyCommand, "chart", chart(1), chart(2)],
+            args: {},
+            flags: {},
         })
     ).toHaveLength(2);
 });
 
-test("filterDeployments: matches by multiple charts", () => {
-    const konfig = new Konfiguration(testEnvName, testEnvDir, testEnvConfig);
-
-    expect(
-        konfig.filterDeployments({
-            argv: [dummyCommand, "chart", chart1Name, chart2Name],
-            args: {},
-            flags: {},
-        })
-    ).toHaveLength(3);
-});
-
 test("filterDeployments: matches local chart", () => {
-    const konfig = new Konfiguration(testEnvName, testEnvDir, testEnvConfig);
-
     expect(
-        konfig.filterDeployments({
-            argv: [dummyCommand, "chart", chart3Name],
+        testKonfig(
+            addChart(1, {
+                chart: chart(1)
+            }),
+            addDeployment(1, {
+                chart: `/local/path/to/${chart(1)}`,
+                source: "local",
+            })
+        ).filterDeployments({
+            argv: [dummyCommand, "chart", chart(1)],
             args: {},
             flags: {},
         })
@@ -154,63 +254,96 @@ test("filterDeployments: matches local chart", () => {
 });
 
 test("filterDeployments: matches by single instance", () => {
-    const konfig = new Konfiguration(testEnvName, testEnvDir, testEnvConfig);
-
     expect(
-        konfig.filterDeployments({
-            argv: [dummyCommand, dep1Name],
+        testKonfig(
+            addChart(1, {
+                chart: chart(1),
+            }),
+            addDeployment(1, {
+                chart: chart(1)
+            })
+        ).filterDeployments({
+            argv: [dummyCommand, dep(1)],
             args: {},
-            flags: {}
+            flags: {},
         })
     ).toHaveLength(1);
 });
 
 test("filterDeployments: matches by multiple instances", () => {
-    const konfig = new Konfiguration(testEnvName, testEnvDir, testEnvConfig);
-
     expect(
-        konfig.filterDeployments({
-            argv: [dummyCommand, dep1Name, dep2Name],
+        testKonfig(
+            addChart(1, {
+                chart: chart(1),
+            }),
+            addDeployment(1, {
+                chart: chart(1),
+            }),
+            addDeployment(2, {
+                chart: chart(1)
+            })
+        ).filterDeployments({
+            argv: [dummyCommand, dep(1), dep(2)],
             args: {},
-            flags: {}
+            flags: {},
         })
     ).toHaveLength(2);
 });
 
 test("filterDeployments: not match nonexistent", () => {
-    const konfig = new Konfiguration(testEnvName, testEnvDir, testEnvConfig);
-
     expect(
-        konfig.filterDeployments({
+        testKonfig(
+            addChart(1, {
+                chart: chart(1),
+            }),
+            addDeployment(1, {
+                chart: chart(1),
+            }),
+            addDeployment(2, {
+                chart: chart(1)
+            })
+        ).filterDeployments({
             argv: [dummyCommand, "fake-dep"],
             args: {},
-            flags: {}
+            flags: {},
         })
     ).toHaveLength(0);
 });
 
 test("filterDeployments: not match disabled", () => {
-    const konfig = new Konfiguration(testEnvName, testEnvDir, testEnvConfig);
-
     expect(
-        konfig.filterDeployments({
-            argv: [dummyCommand, dep4Name],
+        testKonfig(
+            addChart(1, {
+                chart: chart(1),
+            }),
+            addDeployment(1, {
+                chart: chart(1),
+                disabled: true
+            })
+        ).filterDeployments({
+            argv: [dummyCommand, dep(1)],
             args: {},
-            flags: {}
+            flags: {},
         })
     ).toHaveLength(0);
 });
 
 test("filterDeployments: not match cdDisabled in ci mode", () => {
-    const konfig = new Konfiguration(testEnvName, testEnvDir, testEnvConfig);
-
     expect(
-        konfig.filterDeployments({
-            argv: [dummyCommand, dep3Name],
+        testKonfig(
+            addChart(1, {
+                chart: chart(1),
+            }),
+            addDeployment(1, {
+                chart: chart(1),
+                cdDisabled: true
+            })
+        ).filterDeployments({
+            argv: [dummyCommand, dep(1)],
             args: {},
             flags: {
-                cd: true
-            }
+                cd: true,
+            },
         })
     ).toHaveLength(0);
 });

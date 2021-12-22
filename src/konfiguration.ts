@@ -30,7 +30,11 @@ interface Environment {
 }
 
 export class Instance {
-    constructor(public name: string, public dep: Deployment) {}
+    constructor(
+        public name: string,
+        public dep: Deployment,
+        private konfig: Konfiguration
+    ) {}
 
     get chart() {
         return this.dep.source == "local"
@@ -42,6 +46,31 @@ export class Instance {
         const { disabled, cdDisabled } = this.dep;
 
         return !disabled && !(input.flags.cd && cdDisabled);
+    }
+
+    async prepareValues(envValues: ValuesMap, chartDefaultValues?: ValuesMap, deploymentValues?: ValuesMap): Promise<ValuesMap[]> {
+        const chartDefaultValuesP = chartDefaultValues
+            ?? this.konfig.readChartDefaultValues(this.dep.chart);
+        const deploymentValuesP = deploymentValues
+            ?? this.konfig.readDeploymentValues(this.name);
+
+        // TODO: implement unit test
+        // precedence order
+        //
+        // chart default
+        //
+        // per env chart default (file)
+        // per env chart default (inline)
+        // deployment (file)
+        // deployment (inline)
+
+        return [
+            envValues,
+            await chartDefaultValuesP,
+            this.konfig.getChartDefaults(this.dep.chart)?.values || {},
+            await deploymentValuesP,
+            this.dep.values || {},
+        ];
     }
 }
 export interface Deployment {
@@ -58,14 +87,14 @@ interface NamedDeployment extends Deployment {
     name: string
 }
 
-interface ExternalResources {
+export interface ExternalResources {
     secretPresets?: { [index: string]: object },
     deployments: { [index: string]: ExternalResource }
 }
 
 export type ValuesMap = { [index: string]: string | number | ValuesMap };
 
-interface ExternalResource {
+export interface ExternalResource {
     service?: {
         name?: string,
         address?: string,
@@ -78,14 +107,14 @@ interface ExternalResource {
 const konfigLogger = new Logger("Konfiguration");
 
 export class Konfiguration {
-    private instances: InstanceMap;
+    public instances: InstanceMap;
     private log: Logger;
 
-    constructor(public name: string, private envDir: string, private konfig: KonfigProps) {
+    constructor(public name: string, private envDir: string, public props: KonfigProps) {
         this.log = new Logger(`Konfiguration:env/${name}`);
         this.instances = {
-            ...Konfiguration.parseInstances(konfig),
-            ...Konfiguration.parseExternalResources(konfig.externalResources),
+            ...Konfiguration.parseInstances(this),
+            ...Konfiguration.parseExternalResources(this),
         };
     }
     
@@ -106,18 +135,20 @@ export class Konfiguration {
         return new Konfiguration(envName, envDir, konfig as unknown as KonfigProps);
     }
 
-    static parseInstances(konfig: KonfigProps): InstanceMap {
-        return Object.fromEntries(Object.entries(konfig.deployments).map(([name, deployment]) => {
-            const { values = {}, ...chartDefaults } = konfig.chartDefaults[deployment.chart] || {};
+    static parseInstances(konfig: Konfiguration): InstanceMap {
+        return Object.fromEntries(Object.entries(konfig.props.deployments).map(([name, deployment]) => {
+            const { values = {}, ...chartDefaults } = konfig.props.chartDefaults[deployment.chart] || {};
 
             return [name, new Instance(name, {
                 ...chartDefaults,
                 ...deployment
-            })]
+            }, konfig)]
         }));
     }
 
-    static parseExternalResources(resources: ExternalResources): InstanceMap {
+    static parseExternalResources(konfig: Konfiguration): InstanceMap {
+        const resources: ExternalResources = konfig.props.externalResources;
+
         return Object.fromEntries(Object.entries(resources.deployments).map(([name, resource]) => [name, new Instance(name, {
             chart: "external-service",
             values: {
@@ -125,7 +156,7 @@ export class Konfiguration {
                 // TODO: test this
                 externalSecrets: (resource.$secretPreset ? (resources.secretPresets || {})[resource.$secretPreset] : {})
             } as unknown as ValuesMap
-        })]));
+        }, konfig)]));
     }
 
     async readChartDefaultValues(chart: string) {
@@ -145,11 +176,11 @@ export class Konfiguration {
     // }
 
     get environment() {
-        return this.konfig.environment;
+        return this.props.environment;
     }
 
     getChartDefaults(chartName: string): Deployment | undefined {
-        return this.konfig.chartDefaults[chartName];
+        return this.props.chartDefaults[chartName];
     }
 
     filterDeployments<T extends Flags>(input: CommandInput<T>) {
@@ -183,26 +214,26 @@ export class Konfiguration {
     }
 
     logHeader() {
-        this.log.info(`konfiguration ${this.konfig.apiVersion}`);
+        this.log.info(`konfiguration ${this.props.apiVersion}`);
         konfigLogger.infoBlank()
         this.log.info(`Initializing DP environment '${this.name}'...`);
-        this.log.info(`Terraform environment: '${this.konfig.environment.tfEnv}'`);
-        this.log.info(`AWS account: '${this.konfig.environment.awsAccount}'`);
-        this.log.info(`AWS region: '${this.konfig.environment.awsRegion}'`);
-        this.log.info(`K8s context: '${this.konfig.environment.k8sContext}'`);
-        this.log.info(`K8s namespace: '${this.konfig.environment.k8sNamespace}'`);
+        this.log.info(`Terraform environment: '${this.props.environment.tfEnv}'`);
+        this.log.info(`AWS account: '${this.props.environment.awsAccount}'`);
+        this.log.info(`AWS region: '${this.props.environment.awsRegion}'`);
+        this.log.info(`K8s context: '${this.props.environment.k8sContext}'`);
+        this.log.info(`K8s namespace: '${this.props.environment.k8sNamespace}'`);
     }
 
     header(): string {
         return codeBlock`
-            konfiguration ${this.konfig.apiVersion}
+            konfiguration ${this.props.apiVersion}
 
             Initializing DP environment '${this.name}'...
-            Terraform environment: '${this.konfig.environment.tfEnv}'
-            AWS account: '${this.konfig.environment.awsAccount}'
-            AWS region: '${this.konfig.environment.awsRegion}'
-            K8s context: '${this.konfig.environment.k8sContext}'
-            K8s namespace: '${this.konfig.environment.k8sNamespace}'
+            Terraform environment: '${this.props.environment.tfEnv}'
+            AWS account: '${this.props.environment.awsAccount}'
+            AWS region: '${this.props.environment.awsRegion}'
+            K8s context: '${this.props.environment.k8sContext}'
+            K8s namespace: '${this.props.environment.k8sNamespace}'
         `;
     }
 
@@ -212,21 +243,21 @@ export class Konfiguration {
 
             Chart defaults:
 
-                ${Object.entries(this.konfig.chartDefaults)
+                ${Object.entries(this.props.chartDefaults)
                     .map(([name, dep]) =>
                         deploymentToString(name, dep))
                     .join('\n\n')}
 
             Deployments:
 
-                ${Object.entries(this.konfig.deployments)
+                ${Object.entries(this.props.deployments)
                     .map(([name, dep]) =>
                         deploymentToString(name, dep))
                     .join('\n\n')}
             
             External resources:
 
-                ${Object.entries(this.konfig.externalResources.deployments)
+                ${Object.entries(this.props.externalResources.deployments)
                     .map(([name, resource]) =>
                         externalResourceToString(name, resource))
                     .join('\n\n')}
