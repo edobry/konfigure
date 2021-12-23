@@ -67,29 +67,17 @@ const testKonfig = (...konfigMappers: Mapper<KonfigProps>[]) =>
             (acc, map) => map(acc),
             testEnvConfig()));
 
-const addChart = (id: number, chartProps: Deployment): KonfigMapper =>
-    (props: KonfigProps) => {
-        props.chartDefaults[chart(id)] = chartProps;
-        return props;
-    };
+const addResource = <T extends object>(idFunc: ReturnType<typeof resourceName>, ...path: string[]) =>
+    (id: number, props: T): KonfigMapper =>
+        (konfig: KonfigProps) => {
+            deepSet(konfig, props, ...path, idFunc(id));
+            return konfig;
+        };
 
-const addDeployment = (id: number, depProps: Deployment): KonfigMapper =>
-    (props: KonfigProps) => {
-        props.deployments[dep(id)] = depProps;
-        return props;
-    };
-
-const addExternalResource = (id: number, resourceProps: ExternalResource): KonfigMapper =>
-    (props: KonfigProps) => {
-        props.externalResources.deployments[externalResource(id)] = resourceProps;
-        return props;
-    };
-
-const addSecretPreset = (id: number, presetProps: ValuesMap): KonfigMapper =>
-    (props: KonfigProps) => {
-        deepSet(props, presetProps, "externalResources", "secretPresets", secretPreset(id));
-        return props;
-    };
+const addChart = addResource<Deployment>(chart, "chartDefaults");
+const addDeployment = addResource<Deployment>(dep, "deployments");
+const addExternalResource = addResource<ExternalResource>(externalResource, "externalResources", "deployments");
+const addSecretPreset = addResource<ValuesMap>(secretPreset, "externalResources", "secretPresets");
 
 test("parseInstances: handles local chart path", () => {
     expect(
