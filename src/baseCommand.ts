@@ -10,8 +10,11 @@ export { processDeployments } from "./common";
 export { runCommand, runDtCommand } from "./shell";
 export { CommandContext } from "./commandContext";
 
-export interface CommandInput<T extends Flags> {
+export type CommandFlags<T extends Flags> = {
     flags: OutputFlags<T>;
+};
+
+export interface CommandInput<T extends Flags> extends CommandFlags<T> {
     args: OutputArgs<any>;
     argv: string[];
 };
@@ -34,7 +37,7 @@ export default abstract class BaseCommand<T extends Flags> extends Command {
     }
 
     async init(): Promise<void> {
-        const input = this.parse(this.constructor as Input<T>);
+        const input = this.parse(this.constructor as Input<T>) as CommandInput<T>;
         this.printMode(input, this.constructor);
         this.ctx = await CommandContext.init<T>(this.logger, input);
     }
@@ -49,7 +52,7 @@ export default abstract class BaseCommand<T extends Flags> extends Command {
         await this.ctx?.env?.shell.close();
     }
 
-    printMode<T extends Flags>({ flags: { dryrun, testing, auth, debug } }: CommandInput<T>, test: any) {
+    printMode<T extends Flags>({ flags: { dryrun, testing, auth, debug } }: CommandFlags<T>, test: any) {
         this.logger.info(`running ${test.name}`);
 
         if(dryrun)

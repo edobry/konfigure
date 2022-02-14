@@ -12,14 +12,15 @@ export type Environment = {
     shell: InteractiveShell
 };
 
-export class CommandContext<T extends Flags> {    
+export class CommandContext<T extends Flags> {
     constructor(private log: Logger, public input: CommandInput<T>, public env: Environment) {}
 
     static async init<T extends Flags>(log: Logger, input: CommandInput<T>): Promise<CommandContext<T>> {
         const { args, flags } = input;
 
         if(!args) throw new Error();
-        const envName: string = args.environment;
+        // const envName: string = args.environment;
+        const envName: string = args[0];
 
         let konfig;
         try {

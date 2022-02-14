@@ -165,7 +165,7 @@ test("filterDeployments: matches all", () => {
             })
         ).filterDeployments({
             argv: [dummyCommand, "all"],
-            args: {},
+            args: [],
             flags: {},
         })
     ).toHaveLength(5);
@@ -188,7 +188,7 @@ test("filterDeployments: matches by chart", () => {
             })
         ).filterDeployments({
             argv: [dummyCommand, "chart", chart(1)],
-            args: {},
+            args: [],
             flags: {}
         })
     ).toHaveLength(1);
@@ -217,7 +217,7 @@ test("filterDeployments: matches by multiple charts", () => {
             })
         ).filterDeployments({
             argv: [dummyCommand, "chart", chart(1), chart(2)],
-            args: {},
+            args: [],
             flags: {},
         })
     ).toHaveLength(2);
@@ -235,7 +235,7 @@ test("filterDeployments: matches local chart", () => {
             })
         ).filterDeployments({
             argv: [dummyCommand, "chart", chart(1)],
-            args: {},
+            args: [],
             flags: {},
         })
     ).toHaveLength(1);
@@ -252,7 +252,7 @@ test("filterDeployments: matches by single instance", () => {
             })
         ).filterDeployments({
             argv: [dummyCommand, dep(1)],
-            args: {},
+            args: [],
             flags: {},
         })
     ).toHaveLength(1);
@@ -272,7 +272,7 @@ test("filterDeployments: matches by multiple instances", () => {
             })
         ).filterDeployments({
             argv: [dummyCommand, dep(1), dep(2)],
-            args: {},
+            args: [],
             flags: {},
         })
     ).toHaveLength(2);
@@ -292,7 +292,7 @@ test("filterDeployments: not match nonexistent", () => {
             })
         ).filterDeployments({
             argv: [dummyCommand, "fake-dep"],
-            args: {},
+            args: [],
             flags: {},
         })
     ).toHaveLength(0);
@@ -310,7 +310,7 @@ test("filterDeployments: not match disabled", () => {
             })
         ).filterDeployments({
             argv: [dummyCommand, dep(1)],
-            args: {},
+            args: [],
             flags: {},
         })
     ).toHaveLength(0);
@@ -328,7 +328,7 @@ test("filterDeployments: not match cdDisabled in ci mode", () => {
             })
         ).filterDeployments({
             argv: [dummyCommand, dep(1)],
-            args: {},
+            args: [],
             flags: {
                 cd: true,
             },
