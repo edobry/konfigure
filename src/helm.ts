@@ -4,19 +4,19 @@ import { Flags } from "./flags";
 import * as tmp from "tmp-promise";
 import * as fs from "fs-extra";
 import { basename } from "path";
-import { InteractiveShell } from "./shell";
+import { InteractiveShell, ShellCommandRunner } from "./shell";
 import Logger from "./logger";
 import { CommandContext } from "./commandContext";
 import { fromEntries } from "./util";
 
-class HelmClient {
+export class HelmClient {
     private log: Logger;
 
     constructor() {
         this.log = new Logger(this.constructor.name);
     }
 
-    async runHelmCommand(shell: InteractiveShell, dryrun: boolean, debug: boolean, ...helmArgs: string[]) {
+    async runHelmCommand(shell: ShellCommandRunner, dryrun: boolean, debug: boolean, ...helmArgs: string[]) {
         const fullCommand = `helm ${debug ? "--debug " : ""}${helmArgs.join(' ')}`;
         
         this.log.debugBlank();
