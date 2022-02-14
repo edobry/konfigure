@@ -1,4 +1,4 @@
-import { Deployment, ValuesMap } from "./konfiguration";
+import { Deployment, Instance, ValuesMap } from "./konfiguration";
 import { Flags } from "./flags";
 
 import * as tmp from "tmp-promise";
@@ -47,12 +47,12 @@ export class HelmChart<T extends Flags> {
     private log: Logger;
     constructor(
         private name: string,
-        private dep: Deployment,
+        private instance: Instance,
         private envValues: ValuesMap,
         private ctx: CommandContext<T>
     ) {
-        this.log = new Logger(`${dep.chart}/${name}`);
-        this.log.debugYaml(dep);
+        this.log = new Logger(`${instance.chart}/${name}`);
+        this.log.debugYaml(instance);
     }
 
     async runChartCommand(commandArgs: string[], ...extraArgs: string[]) {
@@ -78,7 +78,7 @@ export class HelmChart<T extends Flags> {
     async runChartValuesCommand(...commandArgs: string[]) {
         const valueArgs = await this.writeValueFiles();
 
-        const { chart, source, version } = this.dep;
+        const { chart, dep: { source, version } } = this.instance;
         const versionArg = !version ? "" : `--version=${version}`;
         const chartArg = source == "local" ? chart : `fimbulvetr/${chart}`;
 
@@ -103,7 +103,7 @@ export class HelmChart<T extends Flags> {
 
         this.log.debug(`Reading output directory ${path}`);
         const filenames = await fs.readdir(
-            `${path}/${basename(this.dep.chart)}/templates`
+            `${path}/${basename(this.instance.chart)}/templates`
         );
         const files = fromEntries(
             await Promise.all(
@@ -113,7 +113,7 @@ export class HelmChart<T extends Flags> {
                             x,
                             await fs.readFile(
                                 `${path}/${basename(
-                                    this.dep.chart
+                                    this.instance.chart
                                 )}/templates/${x}`,
                                 "utf-8"
                             ),
@@ -148,7 +148,7 @@ export class HelmChart<T extends Flags> {
     }
 
     async writeValueFiles() {
-        const values = await this.prepareValues();
+        const values = await this.instance.prepareValues(this.envValues);
 
         this.log.debug("Writing values files...");
         const valueFiles = await Promise.all([
