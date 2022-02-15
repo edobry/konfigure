@@ -64,16 +64,17 @@ export class CommandContext<T extends Flags> {
             this.log.debug(JSON.stringify(namespace));
             return;
         } catch(e) {
-            const { response: { statusCode, body } } = e as UnpackAny<ReturnType<typeof k8sApi.readNamespace>>;
-            
-            const msg = `HTTP ${statusCode}: ${body.message}`;
-            if(statusCode == 404)
-                this.log.debug(msg);
-            else {
-                this.log.error(msg);
-                this.log.error(JSON.stringify(e));
-                throw e;
-            }
+            // const { response: { statusCode, body } } = e as UnpackAny<ReturnType<typeof k8sApi.readNamespace>>;
+            this.log.error(e as string);
+
+            // const msg = `HTTP ${statusCode}: ${body.message}`;
+            // if(statusCode == 404)
+            //     this.log.debug(msg);
+            // else {
+            //     this.log.error(msg);
+            //     this.log.error(JSON.stringify(e));
+            //     throw e;
+            // }
         }
 
         try {
@@ -86,7 +87,7 @@ export class CommandContext<T extends Flags> {
             });
 
             this.log.info(`Environment initialized!`);
-            this.log.debugYaml(response.body);
+            this.log.debugYaml(body);
         } catch(e) {
             this.log.error("Namespace creation failed!");
             this.log.error(JSON.stringify(e));

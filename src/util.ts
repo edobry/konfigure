@@ -1,7 +1,7 @@
 import * as fs from "fs-extra";
 import * as path from "path";
 import * as yaml from "js-yaml";
-import * as chalk from "chalk";
+import chalk from "chalk";
 import highlight, { Theme } from "cli-highlight";
 
 import { TemplateTag, inlineArrayTransformer, splitStringTransformer,
@@ -161,7 +161,7 @@ export type UnpackAny<T> = T extends Promise<infer U> ? U: T;
 
 export const deepSet = <T>(obj: Record<string, any>, values: object, ...path: string[]): void =>  {
     const [parent, field, ...restPath] = path;
-    console.log(`parent: ${parent}, field: ${field}, restPath: ${restPath}`);
+    // console.log(`parent: ${parent}, field: ${field}, restPath: ${restPath}`);
 
     if(!obj[parent])
         obj[parent] = {};

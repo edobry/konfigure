@@ -1,7 +1,6 @@
-import { Command } from "@oclif/command";
-import { IConfig } from "@oclif/config";
-
-import { Input, OutputArgs, OutputFlags } from "@oclif/parser";
+// import { Command, Config, Input, OutputArgs, OutputFlags } from "@oclif/core";
+import { Command, Config, Interfaces } from "@oclif/core";
+import { OutputArgs, OutputFlags } from "@oclif/core/lib/interfaces/parser";
 import { CommandContext } from "./commandContext";
 import { Flags, commonFlags, commonArgs } from "./flags";
 import Logger from "./logger";
@@ -15,7 +14,7 @@ export type CommandFlags<T extends Flags> = {
 };
 
 export interface CommandInput<T extends Flags> extends CommandFlags<T> {
-    args: OutputArgs<any>;
+    args: OutputArgs;
     argv: string[];
 };
 
@@ -27,7 +26,7 @@ export default abstract class BaseCommand<T extends Flags> extends Command {
 
     protected logger: Logger;
 
-    constructor(argv: string[], config: IConfig) {
+    constructor(argv: string[], config: Config) {
         super(argv, config);
         this.logger = new Logger(`${this.constructor.name}`);
     }
@@ -37,7 +36,7 @@ export default abstract class BaseCommand<T extends Flags> extends Command {
     }
 
     async init(): Promise<void> {
-        const input = this.parse(this.constructor as Input<T>) as CommandInput<T>;
+        const input = await this.parse(this.constructor as Interfaces.Input<T>) as CommandInput<T>;
         this.printMode(input, this.constructor);
         this.ctx = await CommandContext.init<T>(this.logger, input);
     }
