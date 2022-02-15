@@ -159,7 +159,7 @@ export function fromEntries<V>(entries: [string, V][]) {
 
 export type UnpackAny<T> = T extends Promise<infer U> ? U: T;
 
-export const deepSet = <T>(obj: Record<string, any>, values: object, ...path: string[]): void =>  {
+export const deepSet = <T>(obj: Record<string, any>, values: object, ...path: string[]): void => {
     const [parent, field, ...restPath] = path;
     // console.log(`parent: ${parent}, field: ${field}, restPath: ${restPath}`);
 

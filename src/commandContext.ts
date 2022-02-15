@@ -19,8 +19,7 @@ export class CommandContext<T extends Flags> {
         const { args, flags } = input;
 
         if(!args) throw new Error();
-        // const envName: string = args.environment;
-        const envName: string = args[0];
+        const envName: string = args.environment;
 
         let konfig;
         try {
