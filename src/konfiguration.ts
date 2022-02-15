@@ -74,14 +74,14 @@ export class Instance {
     }
 }
 export interface Deployment {
-    chart: string,
-    type?: "helm" | "cdk8s"
-    source?: "local" | "remote",
-    version?: string,
-    values?: { [index: string]: string | number | ValuesMap }
-    disabled?: boolean,
-    cdDisabled?: boolean,
-    nestValues?: boolean
+    chart: string;
+    type?: "helm" | "cdk8s";
+    source?: "local" | "remote";
+    version?: string;
+    values?: ValuesMap;
+    disabled?: boolean;
+    cdDisabled?: boolean;
+    nestValues?: boolean;
 }
 interface NamedDeployment extends Deployment {
     name: string
@@ -92,7 +92,7 @@ export interface ExternalResources {
     deployments: { [index: string]: ExternalResource }
 }
 
-export type ValuesMap = { [index: string]: string | number | ValuesMap };
+export type ValuesMap = { [index: string]: string | number | boolean | ValuesMap };
 
 export interface ExternalResource {
     service?: {

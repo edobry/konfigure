@@ -4,7 +4,7 @@ import { Flags } from "./flags";
 import * as tmp from "tmp-promise";
 import * as fs from "fs-extra";
 import { basename } from "path";
-import { InteractiveShell, ShellCommandRunner } from "./shell";
+import { ShellCommandRunner } from "./shell";
 import Logger from "./logger";
 import { CommandContext } from "./commandContext";
 import { fromEntries } from "./util";
@@ -45,18 +45,22 @@ export const helmClient = new HelmClient();
 
 export class HelmChart<T extends Flags> {
     private log: Logger;
+    private client: HelmClient;
+
     constructor(
         private name: string,
         private instance: Instance,
         private envValues: ValuesMap,
-        private ctx: CommandContext<T>
+        private ctx: CommandContext<T>,
+        client?: HelmClient
     ) {
         this.log = new Logger(`${instance.chart}/${name}`);
-        this.log.debugYaml(instance);
+        this.client = client || helmClient;
     }
 
     async runChartCommand(commandArgs: string[], ...extraArgs: string[]) {
         const { k8sContext, k8sNamespace } = this.ctx.env.konfig.environment;
+
         const helmArgs = [
             ...commandArgs,
             "--kube-context",
@@ -65,9 +69,9 @@ export class HelmChart<T extends Flags> {
             k8sNamespace,
             this.name,
             ...extraArgs,
-        ];
+        ].filter(x => x);
 
-        return helmClient.runHelmCommand(
+        return this.client.runHelmCommand(
             this.ctx.env.shell,
             this.ctx.input.flags.dryrun,
             this.ctx.input.flags.debug,
@@ -78,7 +82,10 @@ export class HelmChart<T extends Flags> {
     async runChartValuesCommand(...commandArgs: string[]) {
         const valueArgs = await this.writeValueFiles();
 
-        const { chart, dep: { source, version } } = this.instance;
+        const {
+            chart,
+            dep: { source, version },
+        } = this.instance;
         const versionArg = !version ? "" : `--version=${version}`;
         const chartArg = source == "local" ? chart : `fimbulvetr/${chart}`;
 

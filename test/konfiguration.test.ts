@@ -1,10 +1,6 @@
 import { Deployment, ExternalResource, KonfigProps, Konfiguration, ValuesMap } from "../src/konfiguration";
 import { deepSet } from "../src/util";
-
-const awsRegion = "eu-west-1";
-const testEnvName = "test-env";
-const testEnvDev = `${testEnvName}-dev`;
-const testEnvDir = `env/${testEnvName}`;
+import { input, overriddenValues, testEnvConfig, testEnvDir, testEnvName, testKeyName } from "./testUtil";
 
 const resourceName = (name: string) => (id: number) => `${name}${id}`;
 
@@ -12,29 +8,6 @@ const chart = resourceName("chart");
 const dep = resourceName("dep");
 const secretPreset = resourceName("secretPreset");
 const externalResource = resourceName("externalResource");
-
-const testKeyName = "testKey";
-const overriddenValues = { [testKeyName]: "overriddenValue" };
-
-const testEnv = {
-    tfEnv: testEnvDev,
-    tfModule: testEnvDev,
-    awsAccount: testEnvDev,
-    awsRegion,
-    k8sContext: `${testEnvName}-nonprod`,
-    k8sNamespace: testEnvDev,
-    eksNodegroup: `${testEnvName}-${awsRegion}a-workers`,
-};
-const testEnvConfig = (): KonfigProps => ({
-    apiVersion: "v4.15.0",
-    environment: testEnv,
-    chartDefaults: {},
-    deployments: {},
-    externalResources: {
-        secretPresets: {},
-        deployments: {}
-    },
-});
 
 const x = {
     [dep(1)]: {
@@ -146,7 +119,7 @@ test("filterDeployments: matches all", () => {
     expect(
         testKonfig(
             addChart(1, {
-                chart: chart(1)
+                chart: chart(1),
             }),
             addDeployment(1, {
                 chart: chart(1),
@@ -163,11 +136,7 @@ test("filterDeployments: matches all", () => {
             addDeployment(5, {
                 chart: chart(1),
             })
-        ).filterDeployments({
-            argv: [dummyCommand, "all"],
-            args: [],
-            flags: {},
-        })
+        ).filterDeployments(input({}, dummyCommand, "all"))
     ).toHaveLength(5);
 });
 
@@ -175,10 +144,10 @@ test("filterDeployments: matches by chart", () => {
     expect(
         testKonfig(
             addChart(1, {
-                chart: chart(1)
+                chart: chart(1),
             }),
             addChart(2, {
-                chart: chart(2)
+                chart: chart(2),
             }),
             addDeployment(1, {
                 chart: chart(1),
@@ -186,11 +155,7 @@ test("filterDeployments: matches by chart", () => {
             addDeployment(2, {
                 chart: chart(2),
             })
-        ).filterDeployments({
-            argv: [dummyCommand, "chart", chart(1)],
-            args: [],
-            flags: {}
-        })
+        ).filterDeployments(input({}, dummyCommand, "chart", chart(1)))
     ).toHaveLength(1);
 });
 
@@ -215,11 +180,7 @@ test("filterDeployments: matches by multiple charts", () => {
             addDeployment(3, {
                 chart: chart(3),
             })
-        ).filterDeployments({
-            argv: [dummyCommand, "chart", chart(1), chart(2)],
-            args: [],
-            flags: {},
-        })
+        ).filterDeployments(input({}, dummyCommand, "chart", chart(1), chart(2)))
     ).toHaveLength(2);
 });
 
@@ -227,17 +188,13 @@ test("filterDeployments: matches local chart", () => {
     expect(
         testKonfig(
             addChart(1, {
-                chart: chart(1)
+                chart: chart(1),
             }),
             addDeployment(1, {
                 chart: `/local/path/to/${chart(1)}`,
                 source: "local",
             })
-        ).filterDeployments({
-            argv: [dummyCommand, "chart", chart(1)],
-            args: [],
-            flags: {},
-        })
+        ).filterDeployments(input({}, dummyCommand, "chart", chart(1)))
     ).toHaveLength(1);
 });
 
@@ -248,13 +205,9 @@ test("filterDeployments: matches by single instance", () => {
                 chart: chart(1),
             }),
             addDeployment(1, {
-                chart: chart(1)
+                chart: chart(1),
             })
-        ).filterDeployments({
-            argv: [dummyCommand, dep(1)],
-            args: [],
-            flags: {},
-        })
+        ).filterDeployments(input({}, dummyCommand, dep(1)))
     ).toHaveLength(1);
 });
 
@@ -270,11 +223,7 @@ test("filterDeployments: matches by multiple instances", () => {
             addDeployment(2, {
                 chart: chart(1)
             })
-        ).filterDeployments({
-            argv: [dummyCommand, dep(1), dep(2)],
-            args: [],
-            flags: {},
-        })
+        ).filterDeployments(input({}, dummyCommand, dep(1), dep(2)))
     ).toHaveLength(2);
 });
 
@@ -290,11 +239,7 @@ test("filterDeployments: not match nonexistent", () => {
             addDeployment(2, {
                 chart: chart(1)
             })
-        ).filterDeployments({
-            argv: [dummyCommand, "fake-dep"],
-            args: [],
-            flags: {},
-        })
+        ).filterDeployments(input({}, dummyCommand, "fake-dep"))
     ).toHaveLength(0);
 });
 
@@ -308,13 +253,10 @@ test("filterDeployments: not match disabled", () => {
                 chart: chart(1),
                 disabled: true
             })
-        ).filterDeployments({
-            argv: [dummyCommand, dep(1)],
-            args: [],
-            flags: {},
-        })
+        ).filterDeployments(input({}, dummyCommand, dep(1)))
     ).toHaveLength(0);
 });
+
 
 test("filterDeployments: not match cdDisabled in ci mode", () => {
     expect(
@@ -324,14 +266,8 @@ test("filterDeployments: not match cdDisabled in ci mode", () => {
             }),
             addDeployment(1, {
                 chart: chart(1),
-                cdDisabled: true
+                cdDisabled: true,
             })
-        ).filterDeployments({
-            argv: [dummyCommand, dep(1)],
-            args: [],
-            flags: {
-                cd: true,
-            },
-        })
+        ).filterDeployments(input({ cd: true }, dummyCommand, dep(1)))
     ).toHaveLength(0);
 });
