@@ -43,16 +43,21 @@ withPipeline(
     }
 
     withNodejs {
+    runLocalDocker(
+        imageName: 'node-build',
+        version: 'v6.2.0',
+        repo: 'dataeng-tools',
+        dockerfile: 'node.Dockerfile'
+    ) {
+
     stage('Build') {
-        runLocalDocker(
-            imageName: 'node-build',
-            version: 'v6.2.0',
-            repo: 'dataeng-tools',
-            dockerfile: 'node.Dockerfile'
-        ) {
-            sh 'npm install'
-            sh 'npm run build'
-        }
+        sh 'npm install'
+        sh 'npm run build'
+    }
+
+    stage('Test') {
+        sh 'npm run test'
+    }
     }
 
     if (currentBranch in branchesToPublish) {
