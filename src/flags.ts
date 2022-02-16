@@ -24,13 +24,17 @@ export const cd = Flags.boolean({
     description: "running in a CI environment"
 });
 
+export const baseDir = Flags.string({
+    description: "the base directory to search for environments",
+});
+
 export const commonFlags = {
-    help, dryrun, testing, auth, debug, cd
+    help, dryrun, testing, auth, debug, cd, "base-dir": baseDir
 }
 
 export const envArg = {
     name: "environment",
-    description:  "the environment to use",
+    description:  "the environment konfiguration to use",
     required: true
 };
 
@@ -40,6 +44,6 @@ export const instanceArg = {
     required: true
 };
 
-export const commonArgs = [envArg]
+export const commonArgs = [envArg];
 
 export type Flags = { [index: string]: Flag<any> };

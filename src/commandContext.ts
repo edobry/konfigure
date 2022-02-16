@@ -1,11 +1,10 @@
 import * as k8s from "@kubernetes/client-node";
 
-import BaseCommand, { CommandInput } from "./baseCommand";
+import { CommandInput } from "./baseCommand";
 import { Flags } from "./flags";
 import { Konfiguration } from "./konfiguration";
 import Logger from "./logger";
 import { initDtShell, InteractiveShell } from "./shell";
-import { UnpackAny } from "./util";
 
 export type Environment = {
     konfig: Konfiguration,
@@ -23,7 +22,7 @@ export class CommandContext<T extends Flags> {
 
         let konfig;
         try {
-            konfig = await Konfiguration.read(envName);
+            konfig = await Konfiguration.read(envName, flags["base-dir"]);
         } catch (e) {
             log.error(e as string);
             process.exit(1);

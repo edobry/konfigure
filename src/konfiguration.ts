@@ -136,11 +136,11 @@ export class Konfiguration {
         return Konfiguration.getKonfigPath(this.konfigEnv);
     }
 
-    static async read(envName: string) {
+    static async read(envName: string, baseDir?: string) {
         konfigLogger.infoBlank();
         konfigLogger.info("Reading konfiguration...");
 
-        const konfigEnv = await Konfiguration.detectKonfigFile(envName);
+        const konfigEnv = await Konfiguration.detectKonfigFile(envName, baseDir);
         const konfig = await readFile(Konfiguration.getKonfigPath(konfigEnv));
 
         // TODO: implement file schema validation
@@ -151,19 +151,19 @@ export class Konfiguration {
         );
     }
 
-    static async detectKonfigFile(envName: string): Promise<KonfigEnv> {
-        const currentDir = process.cwd();
-        const dir = path.join(currentDir, `env/${envName}`);
+    static async detectKonfigFile(envName: string, baseDir?: string): Promise<KonfigEnv> {
+        const dir = baseDir ?? process.cwd();
+        const envDir = path.join(dir, `env/${envName}`);
 
         try {
             const filename = "konfig.json";
-            await fs.access(path.join(dir, filename), fs.constants.R_OK);
-            return { filename, dir };
+            await fs.access(path.join(envDir, filename), fs.constants.R_OK);
+            return { filename, dir: envDir };
         } catch (e) {
             try {
                 const filename = "config.json";
-                await fs.access(path.join(dir, filename), fs.constants.R_OK);
-                return { filename, dir };
+                await fs.access(path.join(envDir, filename), fs.constants.R_OK);
+                return { filename, dir: envDir };
             } catch (e) {
                 const { code } = e as Error & { code: "ENOENT" };
 
@@ -209,22 +209,18 @@ export class Konfiguration {
         return Object.fromEntries(
             Object.entries(resources.deployments).map(([name, resource]) => [
                 name,
-                new Instance(
-                    name,
-                    {
-                        chart: "external-service",
-                        values: {
-                            ...resource,
-                            // TODO: test this
-                            externalSecrets: resource.$secretPreset
-                                ? (resources.secretPresets || {})[
-                                      resource.$secretPreset
-                                  ]
-                                : {},
-                        } as unknown as ValuesMap,
-                    },
-                    konfig
-                ),
+                new Instance(name, {
+                    chart: "external-service",
+                    values: {
+                        ...resource,
+                        // TODO: test this
+                        externalSecrets: resource.$secretPreset
+                            ? (resources.secretPresets || {})[
+                                    resource.$secretPreset
+                                ]
+                            : {},
+                    } as unknown as ValuesMap,
+                }, konfig),
             ])
         );
     }
