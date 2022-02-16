@@ -9,6 +9,8 @@ const shell = {
     runCommand: jest.fn(async () => ({ exitcode: 0, output: "" })),
 };
 
+Logger.root.setLevel("error");
+
 test("helmClient: runHelmCommand does not run command on dryrun flag", async () => {
     await new HelmClient().runHelmCommand(shell, true, false);
     expect(shell.runCommand.mock.calls.length).toBe(0);

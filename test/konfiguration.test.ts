@@ -1,6 +1,9 @@
 import { Deployment, ExternalResource, KonfigProps, Konfiguration, ValuesMap } from "../src/konfiguration";
+import Logger from "../src/logger";
 import { deepSet } from "../src/util";
 import { input, overriddenValues, testEnvConfig, testEnvDir, testEnvName, testKeyName } from "./testUtil";
+
+Logger.root.setLevel("error");
 
 const resourceName = (name: string) => (id: number) => `${name}${id}`;
 
