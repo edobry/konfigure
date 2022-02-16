@@ -107,7 +107,7 @@ export interface ExternalResource {
 
 const konfigLogger = new Logger("Konfiguration");
 
-type KonfigEnv = {
+export type KonfigEnv = {
     dir: string;
     filename: string;
 }

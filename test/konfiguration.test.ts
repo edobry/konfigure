@@ -1,7 +1,7 @@
 import { Deployment, ExternalResource, KonfigProps, Konfiguration, ValuesMap } from "../src/konfiguration";
 import Logger from "../src/logger";
 import { deepSet } from "../src/util";
-import { input, overriddenValues, testEnvConfig, testEnvDir, testEnvName, testKeyName } from "./testUtil";
+import { input, overriddenValues, testEnvConfig, testKonfigEnv, testEnvName, testKeyName } from "./testUtil";
 
 Logger.root.setLevel("error");
 
@@ -31,14 +31,14 @@ const x = {
 const dummyCommand = "a-command";
 
 test("parses konfig", () => {
-    expect(new Konfiguration(testEnvName, testEnvDir, testEnvConfig())).toBeInstanceOf(Konfiguration);
+    expect(new Konfiguration(testEnvName, testKonfigEnv, testEnvConfig())).toBeInstanceOf(Konfiguration);
 });
 
 type Mapper<T> = (x: T) => T;
 type KonfigMapper = Mapper<KonfigProps>;
 
 const testKonfig = (...konfigMappers: Mapper<KonfigProps>[]) =>
-    new Konfiguration(testEnvName, testEnvDir,
+    new Konfiguration(testEnvName, testKonfigEnv,
         konfigMappers.reduce(
             (acc, map) => map(acc),
             testEnvConfig()));
