@@ -51,8 +51,8 @@ test("helmClient: updateHelmRepos passes flags thru", async () => {
         expect.stringContaining("--debug"));
 });
 
+const chartName = "test-chart";
 const makeChart = (konfig: Konfiguration, flags?: ValuesMap) => {
-    const chartName = "test-chart";
     const instance = new Instance(
         "test-instance",
         { chart: chartName },
@@ -83,4 +83,45 @@ test("helmChart: runChartCommand sets namespace", async () => {
 
     expect(shell.runCommand).toHaveBeenCalledWith(
         expect.stringContaining(`--namespace ${konfig.props.environment.k8sNamespace}`));
+});
+
+test("helmChart: runChartCommand passes in chart name", async () => {
+    const konfig = makeKonfig();
+    await makeChart(konfig).runChartCommand([""]);
+
+    expect(shell.runCommand).toHaveBeenCalledWith(
+        expect.stringContaining(chartName));
+});
+
+test("helmChart: runChartCommand appends extra args", async () => {
+    const konfig = makeKonfig();
+    await makeChart(konfig).runChartCommand([""], testArg);
+
+    expect(shell.runCommand).toHaveBeenCalledWith(
+        expect.stringMatching(`${testArg} 2>&1$`));
+});
+
+test("helmChart: runChartCommand filters out empty args", async () => {
+    const konfig = makeKonfig();
+    await makeChart(konfig).runChartCommand([""], testArg);
+
+    expect(shell.runCommand).toHaveBeenCalledWith(
+        expect.not.stringMatching(`  `));
+});
+
+//TODO: refactor to test calls on HelmClient instead
+test("helmChart: runChartCommand passes flags thru", async () => {
+    const konfig = makeKonfig();
+    await makeChart(konfig, { debug: true }).runChartCommand([""], testArg);
+
+    expect(shell.runCommand).toHaveBeenCalledWith(
+        expect.stringContaining("--debug"));
+});
+
+test("helmChart: uninstall runs command", async () => {
+    const konfig = makeKonfig();
+    await makeChart(konfig, {}).uninstall();
+
+    expect(shell.runCommand).toHaveBeenCalledWith(
+        expect.stringContaining("uninstall"));
 });
