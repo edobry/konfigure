@@ -8,6 +8,8 @@ export default class TeardownCommand extends BaseCommand<typeof TeardownCommand.
     static args = BaseCommand.args;
 
     async command(ctx: CommandContext<typeof TeardownCommand.flags>) {
+        await ctx.handleAuth();
+
         await processDeployments(ctx,
             chart => chart.uninstall(), true);
     }

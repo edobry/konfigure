@@ -140,7 +140,8 @@ export async function initShell(options?: { command: string, inheritStdio?: bool
     };
 };
 
-export type InteractiveShell = Shell & { runCommand: ShellCommand };
+export type ShellCommandRunner = { runCommand: ShellCommand };
+export type InteractiveShell = Shell & ShellCommandRunner;
 export async function initInteractiveShell(): Promise<InteractiveShell> {
     const shell = await initControllableShell();
     

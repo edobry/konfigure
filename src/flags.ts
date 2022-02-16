@@ -1,25 +1,26 @@
-import { flags } from '@oclif/command'
-import { flags as parserFlags } from '@oclif/parser'
+import { Flags, Interfaces } from "@oclif/core";
+import { Flag, FlagInput, ParserInput } from "@oclif/core/lib/interfaces";
+// import { flags as parserFlags } from "@oclif/core";
 
-export const help = flags.help({ char: 'h' });
+export const help = Flags.help({ char: 'h' });
 
-export const dryrun = flags.boolean({
+export const dryrun = Flags.boolean({
     description: "print out commands rather than executing"
 });
 
-export const testing = flags.boolean({
+export const testing = Flags.boolean({
     description: "skip expensive operations during development"
 });
 
-export const auth = flags.boolean({
+export const auth = Flags.boolean({
     description: "automatically authenticate with the appropriate AWS account"
 });
 
-export const debug = flags.boolean({
+export const debug = Flags.boolean({
     description: "log out debug information"
 });
 
-export const cd = flags.boolean({
+export const cd = Flags.boolean({
     description: "running in a CI environment"
 });
 
@@ -41,4 +42,4 @@ export const instanceArg = {
 
 export const commonArgs = [envArg]
 
-export type Flags = { [index: string]: parserFlags.IFlag<any> }
+export type Flags = { [index: string]: Flag<any> };

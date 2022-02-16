@@ -6,12 +6,12 @@ import { HelmChart, helmClient } from "./helm";
 import Logger from "./logger";
 import { CommandContext } from "./commandContext";
 
-export async function processDeployments<T extends Flags>(ctx: CommandContext<T>, chartHandler: (chart: HelmChart<T>) => Promise<void>, skipRepoUpdate?: boolean,) {
+export async function processDeployments<T extends Flags>(ctx: CommandContext<T>, chartHandler: (chart: HelmChart<T>) => Promise<any>, skipRepoUpdate?: boolean,) {
     const { env, input } = ctx;
     
-    const deployments = env.konfig.filterDeployments<T>(input);
+    const instances = env.konfig.filterDeployments<T>(input);
 
-    if(deployments.length == 0) {
+    if(instances.length == 0) {
         Logger.root.info("No deployments configured, nothing to do. Exiting!")
         return;
     }
@@ -30,8 +30,8 @@ export async function processDeployments<T extends Flags>(ctx: CommandContext<T>
     Logger.root.debug("Env values:")
     Logger.root.debugYaml(envValues);
 
-    await Promise.all(deployments
-        .map(entry =>
-            new HelmChart<T>(...entry, envValues, ctx))
+    await Promise.all(instances
+        .map(instance =>
+            new HelmChart<T>(...instance, envValues, ctx))
         .map(chartHandler));
 };

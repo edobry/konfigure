@@ -1,7 +1,7 @@
 import * as fs from "fs-extra";
 import * as path from "path";
 import * as yaml from "js-yaml";
-import * as chalk from "chalk";
+import chalk from "chalk";
 import highlight, { Theme } from "cli-highlight";
 
 import { TemplateTag, inlineArrayTransformer, splitStringTransformer,
@@ -145,4 +145,32 @@ const obsidianTheme: Theme = {
 
 export function prettyPrintYaml(values: object): string {
     return highlight(yaml.dump(values), { language: "yaml", theme: obsidianTheme })
-}
+};
+export function prettyPrintJson(values: object): string {
+    return highlight(JSON.stringify(values, null, 4), { language: "json", theme: obsidianTheme })
+};
+
+export function fromEntries<V>(entries: [string, V][]) {
+    return entries.reduce((acc, [k, v]) => {
+        acc[k] = v;
+        return acc;
+    }, {} as Record<string, V>)
+};
+
+export type UnpackAny<T> = T extends Promise<infer U> ? U: T;
+
+export const deepSet = <T>(obj: Record<string, any>, values: object, ...path: string[]): void => {
+    const [parent, field, ...restPath] = path;
+    // console.log(`parent: ${parent}, field: ${field}, restPath: ${restPath}`);
+
+    if(!obj[parent])
+        obj[parent] = {};
+
+    if(restPath.length > 0)
+        return deepSet(obj[parent], values, field, ...restPath);
+
+    obj[parent][field] = {
+        ...obj[parent][field],
+        ...values
+    };
+};

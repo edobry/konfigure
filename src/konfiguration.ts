@@ -6,10 +6,12 @@ import { pretty, printArgs, readFile, readOptionalFile } from './util';
 import { CommandInput } from "./baseCommand";
 import { Flags } from "./flags";
 import Logger from "./logger";
+import * as fs from "fs-extra";
 
 type DeploymentMap = { [index: string]: Deployment };
+type InstanceMap = { [index: string]: Instance };
 
-interface KonfigProps {
+export interface KonfigProps {
     apiVersion: string,
     environment: Environment,
     chartDefaults: DeploymentMap
@@ -18,7 +20,7 @@ interface KonfigProps {
 }
 
 interface Environment {
-    name: string,
+    name?: string,
     tfEnv: string,
     tfModule: string,
     awsAccount: string,
@@ -28,107 +30,231 @@ interface Environment {
     eksNodegroup: string
 }
 
+export class Instance {
+    constructor(
+        public name: string,
+        public dep: Deployment,
+        private konfig: Konfiguration
+    ) {}
+
+    get chart() {
+        return this.dep.source == "local"
+            ? path.basename(this.dep.chart)
+            : this.dep.chart;
+    }
+
+    isEnabled(input: CommandInput<any>): boolean {
+        const { disabled, cdDisabled } = this.dep;
+
+        return !disabled && !(input.flags.cd && cdDisabled);
+    }
+
+    async prepareValues(envValues: ValuesMap, chartDefaultValues?: ValuesMap, deploymentValues?: ValuesMap): Promise<ValuesMap[]> {
+        const chartDefaultValuesP = chartDefaultValues
+            ?? this.konfig.readChartDefaultValues(this.dep.chart);
+        const deploymentValuesP = deploymentValues
+            ?? this.konfig.readDeploymentValues(this.name);
+
+        // TODO: implement unit test
+        // precedence order
+        //
+        // chart default
+        //
+        // per env chart default (file)
+        // per env chart default (inline)
+        // deployment (file)
+        // deployment (inline)
+
+        return [
+            envValues,
+            await chartDefaultValuesP,
+            this.konfig.getChartDefaults(this.dep.chart)?.values || {},
+            await deploymentValuesP,
+            this.dep.values || {},
+        ];
+    }
+}
 export interface Deployment {
-    chart: string,
-    type?: "helm" | "cdk8s"
-    source?: "local" | "remote",
-    version?: string,
-    values?: { [index: string]: string | number | ValuesMap }
-    disabled?: boolean,
-    cdDisabled?: boolean,
-    nestValues?: boolean
+    chart: string;
+    type?: "helm" | "cdk8s";
+    source?: "local" | "remote";
+    version?: string;
+    values?: ValuesMap;
+    disabled?: boolean;
+    cdDisabled?: boolean;
+    nestValues?: boolean;
 }
 interface NamedDeployment extends Deployment {
     name: string
 }
 
-interface ExternalResources {
-    secretPresets:  { [index: string]: object },
-    deployments:  { [index: string]: ExternalResource }
+export interface ExternalResources {
+    secretPresets?: { [index: string]: object },
+    deployments: { [index: string]: ExternalResource }
 }
 
-export type ValuesMap = { [index: string]: string | number | ValuesMap };
+export type ValuesMap = { [index: string]: string | number | boolean | ValuesMap };
 
-interface ExternalResource {
-    service: {
+export interface ExternalResource {
+    service?: {
         name?: string,
         address?: string,
         port?: number
     },
-    externalSecrets: ValuesMap,
-    $secretPreset: string
-}
-
-function parseExternalResources(resources: ExternalResources): DeploymentMap {
-    return Object.fromEntries(Object.entries(resources.deployments).map(([name, resource]) => [name, {
-        chart: "external-service",
-        values: {
-            ...resource,
-            ...resources.secretPresets[resource.$secretPreset]
-        } as unknown as ValuesMap
-    }]));
-}
-
-function mergeChartDefaults(deployments: DeploymentMap, defaults: DeploymentMap): DeploymentMap {
-    return Object.fromEntries(Object.entries(deployments).map(([name, deployment]) => {
-        const { values = {}, ...chartDefaults } = defaults[deployment.chart] || {};
-
-        return [name, {
-            ...chartDefaults,
-            ...deployment
-        }]
-    }));
+    externalSecrets?: ValuesMap,
+    $secretPreset?: string
 }
 
 const konfigLogger = new Logger("Konfiguration");
 
+type KonfigEnv = {
+    dir: string;
+    filename: string;
+}
+
 export class Konfiguration {
-    private deployments: DeploymentMap;
+    public instances: InstanceMap;
     private log: Logger;
 
-    constructor(public name: string, private envDir: string,
-         private konfig: KonfigProps) {
+    constructor(
+        public name: string,
+        public konfigEnv: KonfigEnv,
+        public props: KonfigProps
+    ) {
         this.log = new Logger(`Konfiguration:env/${name}`);
-        this.deployments = {
-            ...mergeChartDefaults(konfig.deployments, konfig.chartDefaults),
-            ...parseExternalResources(konfig.externalResources)
-        }
+        this.instances = {
+            ...Konfiguration.parseInstances(this),
+            ...Konfiguration.parseExternalResources(this),
+        };
     }
-    
+
+    static getKonfigPath(konfigEnv: KonfigEnv) {
+        return path.join(konfigEnv.dir, konfigEnv.filename);
+    }
+
+    get konfigPath() {
+        return Konfiguration.getKonfigPath(this.konfigEnv);
+    }
+
     static async read(envName: string) {
         konfigLogger.infoBlank();
         konfigLogger.info("Reading konfiguration...");
 
-        const currentDir = process.cwd();
-        const envDir = path.join(currentDir, `env/${envName}`);
+        const konfigEnv = await Konfiguration.detectKonfigFile(envName);
+        const konfig = await readFile(Konfiguration.getKonfigPath(konfigEnv));
 
-        const konfig = await readFile(path.join(envDir, "konfig.json"));
         // TODO: implement file schema validation
-        return new Konfiguration(envName, envDir, konfig as unknown as KonfigProps);
+        return new Konfiguration(
+            envName,
+            konfigEnv,
+            konfig as unknown as KonfigProps
+        );
+    }
+
+    static async detectKonfigFile(envName: string): Promise<KonfigEnv> {
+        const currentDir = process.cwd();
+        const dir = path.join(currentDir, `env/${envName}`);
+
+        try {
+            const filename = "konfig.json";
+            await fs.access(path.join(dir, filename), fs.constants.R_OK);
+            return { filename, dir };
+        } catch (e) {
+            try {
+                const filename = "config.json";
+                await fs.access(path.join(dir, filename), fs.constants.R_OK);
+                return { filename, dir };
+            } catch (e) {
+                const { code } = e as Error & { code: "ENOENT" };
+
+                if (code == "ENOENT") {
+                    Logger.root.error(
+                        `No konfiguration file found for the ${envName} environment!`
+                    );
+                } else {
+                    Logger.root.error(e as string);
+                }
+
+                process.exit(1);
+            }
+        }
+    }
+
+    static parseInstances(konfig: Konfiguration): InstanceMap {
+        return Object.fromEntries(
+            Object.entries(konfig.props.deployments).map(
+                ([name, deployment]) => {
+                    const { values = {}, ...chartDefaults } =
+                        konfig.props.chartDefaults[deployment.chart] || {};
+
+                    return [
+                        name,
+                        new Instance(
+                            name,
+                            {
+                                ...chartDefaults,
+                                ...deployment,
+                            },
+                            konfig
+                        ),
+                    ];
+                }
+            )
+        );
+    }
+
+    static parseExternalResources(konfig: Konfiguration): InstanceMap {
+        const resources: ExternalResources = konfig.props.externalResources;
+
+        return Object.fromEntries(
+            Object.entries(resources.deployments).map(([name, resource]) => [
+                name,
+                new Instance(
+                    name,
+                    {
+                        chart: "external-service",
+                        values: {
+                            ...resource,
+                            // TODO: test this
+                            externalSecrets: resource.$secretPreset
+                                ? (resources.secretPresets || {})[
+                                      resource.$secretPreset
+                                  ]
+                                : {},
+                        } as unknown as ValuesMap,
+                    },
+                    konfig
+                ),
+            ])
+        );
     }
 
     async readChartDefaultValues(chart: string) {
-        return readOptionalFile(path.join(this.envDir, `chartDefaults/${chart}.yaml`));
+        return readOptionalFile(
+            path.join(this.konfigEnv.dir, `chartDefaults/${chart}.yaml`)
+        );
     }
 
     async readDeploymentValues(deployment: string) {
-        return readOptionalFile(path.join(this.envDir, `deployments/${deployment}.yaml`));
+        return readOptionalFile(
+            path.join(this.konfigEnv.dir, `deployments/${deployment}.yaml`)
+        );
     }
 
     // TODO: implement?
     // async readExternalResourceValues(resource: string) {
-    //     const deploymentValuesFile = await fs.readFile(path.join(this.envDir, `deployments/${deployment}.yaml`), { encoding: "UTF-8" });
+    //     const deploymentValuesFile = await fs.readFile(path.join(this.konfigEnv.dir, `deployments/${deployment}.yaml`), { encoding: "UTF-8" });
     //     const deploymentValues = JSON.parse(deploymentValuesFile);
 
     //     return deploymentValues;
     // }
 
     get environment() {
-        return this.konfig.environment;
+        return this.props.environment;
     }
 
     getChartDefaults(chartName: string): Deployment | undefined {
-        return this.konfig.chartDefaults[chartName];
+        return this.props.chartDefaults[chartName];
     }
 
     filterDeployments<T extends Flags>(input: CommandInput<T>) {
@@ -137,52 +263,60 @@ export class Konfiguration {
         const filter: string[] = input.argv.slice(1);
 
         konfigLogger.infoBlank();
-        if(filter[0] == "all") {
-            this.log.info("Processing all deployments")
-            
-            if(filter.length > 1)
-                console.warn("Additional instances specified after 'all' keyword, will be ignored.\n")
-            
+        if (filter[0] == "all") {
+            this.log.info("Processing all deployments");
+
+            if (filter.length > 1)
+                this.log.warn(
+                    "Additional instances specified after 'all' keyword, will be ignored."
+                );
+
             instancePredicate = () => true;
-        } else if(filter[0] == "chart") {
+        } else if (filter[0] == "chart") {
             const charts = filter.slice(1);
-            const chartFilter = charts.join(', ');
-            this.log.info(`Limiting to instances of chart${charts.length > 1 ? 's' : ''}: ${chartFilter}`);
-            instancePredicate = ([, deployment]) => chartFilter.includes(deployment.chart);
-        }
-        else {
-            this.log.info(`Limiting to: ${filter.join(', ')}`);
+            const chartFilter = charts.join(", ");
+            this.log.info(
+                `Limiting to instances of chart${
+                    charts.length > 1 ? "s" : ""
+                }: ${chartFilter}`
+            );
+            instancePredicate = ([, instance]) =>
+                chartFilter.includes(instance.chart);
+        } else {
+            this.log.info(`Limiting to: ${filter.join(", ")}`);
             instancePredicate = ([name]) => filter.includes(name);
         }
 
-        return Object.entries(this.deployments)
+        return Object.entries(this.instances)
             .filter(instancePredicate)
-            .filter(([, { disabled, cdDisabled }]) => {
-                return !disabled && !(input.flags.cd && cdDisabled)
-            });
+            .filter(([, instance]) => instance.isEnabled(input));
     }
 
     logHeader() {
-        this.log.info(`konfiguration ${this.konfig.apiVersion}`);
-        konfigLogger.infoBlank()
+        this.log.info(`konfiguration ${this.props.apiVersion}`);
+        konfigLogger.infoBlank();
         this.log.info(`Initializing DP environment '${this.name}'...`);
-        this.log.info(`Terraform environment: '${this.konfig.environment.tfEnv}'`);
-        this.log.info(`AWS account: '${this.konfig.environment.awsAccount}'`);
-        this.log.info(`AWS region: '${this.konfig.environment.awsRegion}'`);
-        this.log.info(`K8s context: '${this.konfig.environment.k8sContext}'`);
-        this.log.info(`K8s namespace: '${this.konfig.environment.k8sNamespace}'`);
+        this.log.info(
+            `Terraform environment: '${this.props.environment.tfEnv}'`
+        );
+        this.log.info(`AWS account: '${this.props.environment.awsAccount}'`);
+        this.log.info(`AWS region: '${this.props.environment.awsRegion}'`);
+        this.log.info(`K8s context: '${this.props.environment.k8sContext}'`);
+        this.log.info(
+            `K8s namespace: '${this.props.environment.k8sNamespace}'`
+        );
     }
 
     header(): string {
         return codeBlock`
-            konfiguration ${this.konfig.apiVersion}
+            konfiguration ${this.props.apiVersion}
 
             Initializing DP environment '${this.name}'...
-            Terraform environment: '${this.konfig.environment.tfEnv}'
-            AWS account: '${this.konfig.environment.awsAccount}'
-            AWS region: '${this.konfig.environment.awsRegion}'
-            K8s context: '${this.konfig.environment.k8sContext}'
-            K8s namespace: '${this.konfig.environment.k8sNamespace}'
+            Terraform environment: '${this.props.environment.tfEnv}'
+            AWS account: '${this.props.environment.awsAccount}'
+            AWS region: '${this.props.environment.awsRegion}'
+            K8s context: '${this.props.environment.k8sContext}'
+            K8s namespace: '${this.props.environment.k8sNamespace}'
         `;
     }
 
@@ -192,25 +326,24 @@ export class Konfiguration {
 
             Chart defaults:
 
-                ${Object.entries(this.konfig.chartDefaults)
-                    .map(([name, dep]) =>
-                        deploymentToString(name, dep))
-                    .join('\n\n')}
+                ${Object.entries(this.props.chartDefaults)
+                    .map(([name, dep]) => deploymentToString(name, dep))
+                    .join("\n\n")}
 
             Deployments:
 
-                ${Object.entries(this.konfig.deployments)
-                    .map(([name, dep]) =>
-                        deploymentToString(name, dep))
-                    .join('\n\n')}
+                ${Object.entries(this.props.deployments)
+                    .map(([name, dep]) => deploymentToString(name, dep))
+                    .join("\n\n")}
             
             External resources:
 
-                ${Object.entries(this.konfig.externalResources.deployments)
+                ${Object.entries(this.props.externalResources.deployments)
                     .map(([name, resource]) =>
-                        externalResourceToString(name, resource))
-                    .join('\n\n')}
-        `;  
+                        externalResourceToString(name, resource)
+                    )
+                    .join("\n\n")}
+        `;
 
         return output;
     }

@@ -1,7 +1,6 @@
-import { Command } from "@oclif/command";
-import { IConfig } from "@oclif/config";
-
-import { Input, OutputArgs, OutputFlags } from "@oclif/parser";
+// import { Command, Config, Input, OutputArgs, OutputFlags } from "@oclif/core";
+import { Command, Config, Interfaces } from "@oclif/core";
+import { OutputArgs, OutputFlags } from "@oclif/core/lib/interfaces/parser";
 import { CommandContext } from "./commandContext";
 import { Flags, commonFlags, commonArgs } from "./flags";
 import Logger from "./logger";
@@ -10,9 +9,12 @@ export { processDeployments } from "./common";
 export { runCommand, runDtCommand } from "./shell";
 export { CommandContext } from "./commandContext";
 
-export interface CommandInput<T extends Flags> {
+export type CommandFlags<T extends Flags> = {
     flags: OutputFlags<T>;
-    args: OutputArgs<any>;
+};
+
+export interface CommandInput<T extends Flags> extends CommandFlags<T> {
+    args: OutputArgs;
     argv: string[];
 };
 
@@ -24,7 +26,7 @@ export default abstract class BaseCommand<T extends Flags> extends Command {
 
     protected logger: Logger;
 
-    constructor(argv: string[], config: IConfig) {
+    constructor(argv: string[], config: Config) {
         super(argv, config);
         this.logger = new Logger(`${this.constructor.name}`);
     }
@@ -34,7 +36,7 @@ export default abstract class BaseCommand<T extends Flags> extends Command {
     }
 
     async init(): Promise<void> {
-        const input = this.parse(this.constructor as Input<T>);
+        const input = await this.parse(this.constructor as Interfaces.Input<T>) as CommandInput<T>;
         this.printMode(input, this.constructor);
         this.ctx = await CommandContext.init<T>(this.logger, input);
     }
@@ -49,7 +51,7 @@ export default abstract class BaseCommand<T extends Flags> extends Command {
         await this.ctx?.env?.shell.close();
     }
 
-    printMode<T extends Flags>({ flags: { dryrun, testing, auth, debug } }: CommandInput<T>, test: any) {
+    printMode<T extends Flags>({ flags: { dryrun, testing, auth, debug } }: CommandFlags<T>, test: any) {
         this.logger.info(`running ${test.name}`);
 
         if(dryrun)

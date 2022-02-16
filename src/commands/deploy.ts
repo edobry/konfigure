@@ -8,6 +8,9 @@ export default class DeployCommand extends BaseCommand<typeof DeployCommand.flag
     static args = BaseCommand.args;
 
     async command(ctx: CommandContext<typeof DeployCommand.flags>) {
+        await ctx.handleAuth();
+        await ctx.initNamespace();
+
         await processDeployments(ctx,
             chart => chart.deploy());
     }

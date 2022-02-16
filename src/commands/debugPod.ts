@@ -1,4 +1,4 @@
-import { flags } from '@oclif/command';
+import { Flags } from '@oclif/core';
 import BaseCommand, { CommandContext, runDtCommand } from '../baseCommand';
 
 export default class DebugPodCommand extends BaseCommand<typeof DebugPodCommand.flags> {
@@ -7,14 +7,15 @@ export default class DebugPodCommand extends BaseCommand<typeof DebugPodCommand.
 
     static flags = {
         ...BaseCommand.flags,
-        serviceAccount: flags.string({
+        serviceAccount: Flags.string({
             description: "which service account to run as"
         })
     };
     static args = BaseCommand.args;
 
-    async command({ env, input }: CommandContext<typeof DebugPodCommand.flags>) {
-        const { awsRegion } = env.konfig.environment
+    async command(ctx: CommandContext<typeof DebugPodCommand.flags>) {
+        const { env: { konfig: { environment: { awsRegion } } }, input } = ctx;
+        await ctx.handleAuth();
         
         const args = [];
         if(input.flags.serviceAccount)

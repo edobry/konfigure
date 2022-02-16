@@ -1,21 +1,23 @@
-import { Deployment, ValuesMap } from "./konfiguration";
+import { Deployment, Instance, ValuesMap } from "./konfiguration";
 import { Flags } from "./flags";
 
 import * as tmp from "tmp-promise";
 import * as fs from "fs-extra";
-import { InteractiveShell } from "./shell";
+import { basename } from "path";
+import { ShellCommandRunner } from "./shell";
 import Logger from "./logger";
 import { CommandContext } from "./commandContext";
+import { fromEntries } from "./util";
 
-class HelmClient {
+export class HelmClient {
     private log: Logger;
 
     constructor() {
         this.log = new Logger(this.constructor.name);
     }
 
-    async runHelmCommand(shell: InteractiveShell, dryrun: boolean, ...helmArgs: string[]) {
-        const fullCommand = `helm ${helmArgs.join(' ')}`;
+    async runHelmCommand(shell: ShellCommandRunner, dryrun: boolean, debug: boolean, ...helmArgs: string[]) {
+        const fullCommand = `helm ${debug ? "--debug " : ""}${helmArgs.join(' ')}`;
         
         this.log.debugBlank();
         this.log.debug("Running helm command...")
@@ -24,7 +26,7 @@ class HelmClient {
             return;
         }
 
-        const { exitcode } = await shell.runCommand(`${fullCommand} 2>&1`);
+        const { exitcode, output } = await shell.runCommand(`${fullCommand} 2>&1`);
         if(exitcode != 0) {
             this.log.error(`Helm command failed with error code ${exitcode}!`);
             process.exit(1);
@@ -35,7 +37,7 @@ class HelmClient {
         this.log.infoBlank();
         this.log.info(`Updating repositories...`)
 
-        return this.runHelmCommand(env.shell, input.flags.dryrun, "repo", "update");
+        return this.runHelmCommand(env.shell, input.flags.dryrun, input.flags.debug, "repo", "update");
     }
 }
 
@@ -43,47 +45,107 @@ export const helmClient = new HelmClient();
 
 export class HelmChart<T extends Flags> {
     private log: Logger;
-    constructor(private name: string, private dep: Deployment, private envValues: ValuesMap, private ctx: CommandContext<T>) {
-        this.log = new Logger(`${dep.chart}/${name}`);
-        this.log.debugYaml(dep);
+    private client: HelmClient;
+
+    constructor(
+        private name: string,
+        private instance: Instance,
+        private envValues: ValuesMap,
+        private ctx: CommandContext<T>,
+        client?: HelmClient
+    ) {
+        this.log = new Logger(`${instance.chart}/${name}`);
+        this.client = client || helmClient;
     }
-    
+
     async runChartCommand(commandArgs: string[], ...extraArgs: string[]) {
         const { k8sContext, k8sNamespace } = this.ctx.env.konfig.environment;
-        const helmArgs = [...commandArgs,
-            "--kube-context", k8sContext, "--namespace", k8sNamespace,
-            this.name, ...extraArgs];
 
-        return helmClient.runHelmCommand(this.ctx.env.shell, this.ctx.input.flags.dryrun, ...helmArgs);
+        const helmArgs = [
+            ...commandArgs,
+            "--kube-context",
+            k8sContext,
+            "--namespace",
+            k8sNamespace,
+            this.name,
+            ...extraArgs,
+        ].filter(x => x);
+
+        return this.client.runHelmCommand(
+            this.ctx.env.shell,
+            this.ctx.input.flags.dryrun,
+            this.ctx.input.flags.debug,
+            ...helmArgs
+        );
     }
-    
-    async runChartValuesCommand(...commandArgs: string[]) {
-        const valueArgs = await this.prepareValues();
 
-        const { chart, source, version } = this.dep;
-        const versionArg = !version ? '' : `--version=${version}`;
+    async runChartValuesCommand(...commandArgs: string[]) {
+        const valueArgs = await this.writeValueFiles();
+
+        const {
+            chart,
+            dep: { source, version },
+        } = this.instance;
+        const versionArg = !version ? "" : `--version=${version}`;
         const chartArg = source == "local" ? chart : `fimbulvetr/${chart}`;
-        
-        return this.runChartCommand(commandArgs, chartArg, versionArg, ...valueArgs)
+
+        return this.runChartCommand(
+            commandArgs,
+            chartArg,
+            versionArg,
+            ...valueArgs
+        );
     }
 
     async render() {
         this.log.infoBlank();
-        this.log.info(`Rendering ${this.name}...`)
+        this.log.info(`Rendering ${this.name}...`);
 
-        return this.runChartValuesCommand("template");
+        const { path, cleanup } = await tmp.dir({
+            template: "tmp-helm-XXXXXX",
+            unsafeCleanup: true,
+        });
+
+        await this.runChartValuesCommand("template", `--output-dir ${path}`);
+
+        this.log.debug(`Reading output directory ${path}`);
+        const filenames = await fs.readdir(
+            `${path}/${basename(this.instance.chart)}/templates`
+        );
+        const files = fromEntries(
+            await Promise.all(
+                filenames.map(
+                    async (x) =>
+                        [
+                            x,
+                            await fs.readFile(
+                                `${path}/${basename(
+                                    this.instance.chart
+                                )}/templates/${x}`,
+                                "utf-8"
+                            ),
+                        ] as [string, string]
+                )
+            )
+        );
+        await cleanup();
+
+        Object.entries(files).forEach(([name, file]) => {
+            this.log.info(`Rendered manifest ${name}:`);
+            this.log.info(file);
+        });
     }
-    
+
     async deploy() {
         this.log.infoBlank();
-        this.log.info(`Deploying ${this.name}...`)
+        this.log.info(`Deploying ${this.name}...`);
 
         return this.runChartValuesCommand("upgrade", "--install");
     }
-    
+
     async uninstall() {
         this.log.infoBlank();
-        this.log.info(`Uninstalling ${this.name}...`)
+        this.log.info(`Uninstalling ${this.name}...`);
 
         return this.runChartCommand(["uninstall"]);
     }
@@ -92,45 +154,32 @@ export class HelmChart<T extends Flags> {
         return this.runChartValuesCommand("show");
     }
 
-    async prepareValues() {
-        const chartDefaultValues = this.ctx.env.konfig.readChartDefaultValues(this.dep.chart);
-        const deploymentValues = this.ctx.env.konfig.readDeploymentValues(this.name);
+    async writeValueFiles() {
+        const values = await this.instance.prepareValues(this.envValues);
 
-        // TODO: implement unit test
-        // precedence order
-        //
-        // chart default
-        //
-        // per env chart default (file)
-        // per env chart default (inline)
-        // deployment (file)
-        // deployment (inline)
-
-        const values: ValuesMap[] = [
-            this.envValues,
-            await chartDefaultValues,
-            this.ctx.env.konfig.getChartDefaults(this.dep.chart)?.values || {},
-            await deploymentValues,
-            this.dep.values || {},
-        ];
-
-        this.log.debug("Writing values files...")
+        this.log.debug("Writing values files...");
         const valueFiles = await Promise.all([
             ...values
-                .filter(x => Object.keys(x).length !== 0)
-                .map(this.writeValueFile.bind(this))
+                .filter((x) => Object.keys(x).length !== 0)
+                .map(this.writeValueFile.bind(this)),
         ]);
 
-        return valueFiles.map(x => ["-f", x]).flat()
+        return valueFiles.map((x) => ["-f", x]).flat();
     }
 
     async writeValueFile(values: object) {
-        const { fd, path, cleanup } = await tmp.file({ template: 'tmp-XXXXXX.json' });
+        const { fd, path, cleanup } = await tmp.file({
+            template: "tmp-XXXXXX.json",
+        });
 
-        this.log.debug(`Writing values file ${path}...`)
+        this.log.debug(`Writing values file ${path}...`);
         this.log.debugYaml(values);
 
-        const { bytesWritten, buffer } = await fs.write(fd, Buffer.from(JSON.stringify(values)))
+        const { bytesWritten, buffer } = await fs.write(
+            fd,
+            Buffer.from(JSON.stringify(values))
+        );
+        // await cleanup();
 
         return path;
     }
