@@ -25,13 +25,7 @@ export class CommandContext<T extends Flags> {
         try {
             konfig = await Konfiguration.read(envName);
         } catch (e) {
-            const { code } = e as Error & { code: "ENOENT" };
-            if(code == "ENOENT") {
-                log.info(`No konfiguration file found for the ${envName} environment!`)
-            } else {
-                log.error(e as string);
-            }
-
+            log.error(e as string);
             process.exit(1);
         }
 
