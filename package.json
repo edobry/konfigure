@@ -60,9 +60,10 @@
     ]
   },
   "scripts": {
-    "posttest": "eslint . --ext .ts --config .eslintrc",
+    "build": "tsc --build tsconfig.json",
+    "lint": "eslint . --ext .ts --config .eslintrc",
     "test": "jest --passWithNoTests --all",
-    "build": "tsc --build tsconfig.json"
+    "precommit": "pre-commit run --all-files"
   },
   "types": "lib/index.d.ts",
   "dependencies": {

@@ -45,7 +45,7 @@ withPipeline(
     withNodejs {
     runLocalDocker(
         imageName: 'node-build',
-        version: 'v6.2.0',
+        version: 'cdbc678d5ea066ae96cd4e9e615a6f1fc15418b9',
         repo: 'dataeng-tools',
         dockerfile: 'node.Dockerfile'
     ) {
@@ -57,6 +57,10 @@ withPipeline(
 
     stage('Test') {
         sh 'npm run test'
+    }
+
+    stage('Lint') {
+        sh 'npm run precommit'
     }
     }
 
