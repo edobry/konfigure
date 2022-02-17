@@ -1,5 +1,4 @@
 import BaseCommand, { CommandContext, runCommand } from "../baseCommand";
-import { Konfiguration } from "../konfiguration";
 
 export default class EditCommand extends BaseCommand<typeof EditCommand.flags> {
     static description = "launch k9s in the current environment";

@@ -8,19 +8,19 @@ import { readOptionalFile } from "./util";
 type Consumer<T> = (result: T) => void;
 type ConsumerList<T> = Consumer<T>[];
 type CommandResult = {
-    exitcode: number,
-    output: string,
+    exitcode: number;
+    output: string;
 };
 export type Shell = {
-    chunks: string[],
-    childShell: ChildProcess | ChildProcessByStdio<internal.Writable, internal.Readable, internal.Readable>,
-    close: () => Promise<CommandResult>,
+    chunks: string[];
+    childShell: ChildProcess | ChildProcessByStdio<internal.Writable, internal.Readable, internal.Readable>;
+    close: () => Promise<CommandResult>;
 }
 export type ControllableShell = Shell & {
-    onData: (listener: Consumer<string>) => number
-    onControl: (listener: Consumer<string>) => number
-    unsubData: (id: number) => void,
-    unsubControl: (id: number) => void
+    onData: (listener: Consumer<string>) => number;
+    onControl: (listener: Consumer<string>) => number;
+    unsubData: (id: number) => void;
+    unsubControl: (id: number) => void;
 };
 export type ShellCommand = (command: string, options?: { pipeInput: boolean }) => Promise<CommandResult>;
 
@@ -35,10 +35,10 @@ export async function initControllableShell(options?: { command: string }): Prom
     let latestDataId = 0;
     let latestControlId = 0;
     const dataListeners: {
-        [index: string]: Consumer<string>,
+        [index: string]: Consumer<string>;
     } = {};
     const controlListeners: {
-        [index: string]: Consumer<string>,
+        [index: string]: Consumer<string>;
     } = {};
 
     const onData = (listener: Consumer<string>): number => {
@@ -63,9 +63,9 @@ export async function initControllableShell(options?: { command: string }): Prom
         Object.values(dataListeners)
             .forEach(f => f(chunk));
 
-        logger.trace(`data: ${chunk}`)
-        logger.trace(`data length: ${chunk.length}`)
-        logger.trace(`data end: ${chunk.codePointAt(chunk.length-1)}`)
+        logger.trace(`data: ${chunk}`);
+        logger.trace(`data length: ${chunk.length}`);
+        logger.trace(`data end: ${chunk.codePointAt(chunk.length-1)}`);
     }).pipe(process.stdout);
     onData(x => shell.chunks.push(x));
 
@@ -74,9 +74,9 @@ export async function initControllableShell(options?: { command: string }): Prom
         Object.values(controlListeners)
             .forEach(f => f(chunk));
 
-        logger.trace(`data: ${chunk}`)
-        logger.trace(`data length: ${chunk.length}`)
-        logger.trace(`data end: ${chunk.codePointAt(chunk.length-1)}`)
+        logger.trace(`data: ${chunk}`);
+        logger.trace(`data length: ${chunk.length}`);
+        logger.trace(`data end: ${chunk.codePointAt(chunk.length-1)}`);
     });
     // onControl(x => shell.chunks.push(x));
 
@@ -86,10 +86,10 @@ export async function initControllableShell(options?: { command: string }): Prom
         unsubData,
         unsubControl,
         onControl
-    }
+    };
 };
 
-export async function initShell(options?: { command: string, inheritStdio?: boolean }): Promise<Shell> {
+export async function initShell(options?: { command: string; inheritStdio?: boolean }): Promise<Shell> {
     // TODO: make configurable
     const shell = "bash"; //process.env.SHELL;
     if(!shell)
@@ -100,8 +100,8 @@ export async function initShell(options?: { command: string, inheritStdio?: bool
     };
     if(options?.command)
         shellOptions.shell = shell;
-    
-    logger.debug("launching child shell...")
+
+    logger.debug("launching child shell...");
     const childShell = spawn(options?.command || shell, [], shellOptions);
 
     const chunks: string[] = [];
@@ -116,12 +116,12 @@ export async function initShell(options?: { command: string, inheritStdio?: bool
             ? exitListeners
             : errorListeners
         ).forEach((f) =>
-            f({ exitcode, output: chunks.join('') })
+            f({ exitcode, output: chunks.join("") })
         );
     });
 
     childShell.on("error", (err) => {
-        logger.trace(`exit: ${err.message}`)
+        logger.trace(`exit: ${err.message}`);
 
         errorListeners.forEach((f) => f(err));
     });
@@ -144,7 +144,7 @@ export type ShellCommandRunner = { runCommand: ShellCommand };
 export type InteractiveShell = Shell & ShellCommandRunner;
 export async function initInteractiveShell(): Promise<InteractiveShell> {
     const shell = await initControllableShell();
-    
+
     return {
         ...shell,
         runCommand: runInteractiveCommand(shell)
@@ -166,13 +166,13 @@ const runInteractiveCommand: (shell: ControllableShell) => ShellCommand = (shell
             logger.trace(`current control chunk: ${chunk}`);
             commandControlChunks.push(chunk);
 
-            if (chunk.endsWith(TERMINATOR_CHUNK)) {
-                logger.trace("is terminator chunk")
-                const chunkList = commandControlChunks.join('')
-                        .replace(`\n${TERMINATOR_CHUNK}`, '').split('\n');
+            if(chunk.endsWith(TERMINATOR_CHUNK)) {
+                logger.trace("is terminator chunk");
+                const chunkList = commandControlChunks.join("")
+                    .replace(`\n${TERMINATOR_CHUNK}`, "").split("\n");
                 const exitcode = parseInt(chunkList[chunkList.length-1], 10);
                 logger.trace(`exit code: ${exitcode}`);
-                logger.trace(commandControlChunks.join(', '));
+                logger.trace(commandControlChunks.join(", "));
 
                 shell.unsubData(dataId);
                 shell.unsubControl(controlId);
@@ -180,7 +180,7 @@ const runInteractiveCommand: (shell: ControllableShell) => ShellCommand = (shell
                 if(options?.pipeInput)
                     process.stdin.unpipe(shell.childShell.stdin!);
 
-                res({ exitcode, output: commandDataChunks.join('') });
+                res({ exitcode, output: commandDataChunks.join("") });
                 commandDataChunks = [];
                 commandControlChunks = [];
 
@@ -189,10 +189,10 @@ const runInteractiveCommand: (shell: ControllableShell) => ShellCommand = (shell
         });
     });
 
-    if(options?.pipeInput) {
+    if(options?.pipeInput)
         process.stdin.pipe(shell.childShell.stdin!);
-    }
-    
+
+
     [command, "echo $? >&2", `echo "${TERMINATOR}" >&2`].forEach(x =>
         shell.childShell.stdin?.write(`${x};\n`));
 
@@ -208,12 +208,12 @@ export async function runCommand(command: string) {
 
 export async function initDtShell() {
     const shell = await initInteractiveShell();
-    
-    logger.debug("initializing dataeng-tools...")
+
+    logger.debug("initializing dataeng-tools...");
     try {
         await shell.runCommand(`source ${await findDtInitScript()}`);
     } catch (e) {
-        Logger.root.debug((e as any).toString())
+        Logger.root.debug((e as any).toString());
     }
 
     return shell;

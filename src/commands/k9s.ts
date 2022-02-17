@@ -1,8 +1,8 @@
-import BaseCommand, { CommandContext, runDtCommand } from '../baseCommand';
+import BaseCommand, { CommandContext, runDtCommand } from "../baseCommand";
 
 export default class K9sCommand extends BaseCommand<typeof K9sCommand.flags> {
     static description = "launch k9s in the current environment";
-    static strict = false
+    static strict = false;
 
     static flags = BaseCommand.flags;
     static args = BaseCommand.args;
@@ -16,7 +16,7 @@ export default class K9sCommand extends BaseCommand<typeof K9sCommand.flags> {
         const k9sCommand = `k9s --context "${k8sContext}" --namespace "${k8sNamespace}" -c deployments`;
 
         if(input.flags.dryrun)
-            this.logger.info(k9sCommand)
+            this.logger.info(k9sCommand);
         else
             await runDtCommand(k9sCommand);
     }

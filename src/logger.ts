@@ -21,7 +21,8 @@ export default class Logger {
                     options: {
                         level: logLevel,
                     },
-                }})
+                }
+            })
             : (parent || Logger.root).logger.child({ name });
     }
 

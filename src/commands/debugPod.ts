@@ -1,9 +1,9 @@
-import { Flags } from '@oclif/core';
-import BaseCommand, { CommandContext, runDtCommand } from '../baseCommand';
+import { Flags } from "@oclif/core";
+import BaseCommand, { CommandContext, runDtCommand } from "../baseCommand";
 
 export default class DebugPodCommand extends BaseCommand<typeof DebugPodCommand.flags> {
     static description = "launch k9s in the current environment";
-    static strict = false
+    static strict = false;
 
     static flags = {
         ...BaseCommand.flags,
@@ -16,14 +16,14 @@ export default class DebugPodCommand extends BaseCommand<typeof DebugPodCommand.
     async command(ctx: CommandContext<typeof DebugPodCommand.flags>) {
         const { env: { konfig: { environment: { awsRegion } } }, input } = ctx;
         await ctx.handleAuth();
-        
+
         const args = [];
         if(input.flags.serviceAccount)
-            args.push("--serviceAccount", input.flags.serviceAccount)
+            args.push("--serviceAccount", input.flags.serviceAccount);
 
-        const debugPodCommand = `k8sDebugPod --az ${awsRegion}a ${args.join(' ')}`;
+        const debugPodCommand = `k8sDebugPod --az ${awsRegion}a ${args.join(" ")}`;
         if(input.flags.dryrun)
-            this.logger.info(debugPodCommand)
+            this.logger.info(debugPodCommand);
         else
             await runDtCommand(debugPodCommand);
     }
