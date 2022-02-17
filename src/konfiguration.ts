@@ -1,33 +1,33 @@
 import * as path from "path";
 
-import { codeBlock } from 'common-tags'
+import { codeBlock } from "common-tags";
 
-import { pretty, printArgs, readFile, readOptionalFile } from './util';
+import * as fs from "fs-extra";
 import { CommandInput } from "./baseCommand";
 import { Flags } from "./flags";
 import Logger from "./logger";
-import * as fs from "fs-extra";
+import { pretty, printArgs, readFile, readOptionalFile } from "./util";
 
 type DeploymentMap = { [index: string]: Deployment };
 type InstanceMap = { [index: string]: Instance };
 
 export interface KonfigProps {
-    apiVersion: string,
-    environment: Environment,
-    chartDefaults: DeploymentMap
-    deployments: DeploymentMap,
-    externalResources: ExternalResources
+    apiVersion: string;
+    environment: Environment;
+    chartDefaults: DeploymentMap;
+    deployments: DeploymentMap;
+    externalResources: ExternalResources;
 }
 
 interface Environment {
-    name?: string,
-    tfEnv: string,
-    tfModule: string,
-    awsAccount: string,
-    awsRegion: string,
-    k8sContext: string,
-    k8sNamespace: string,
-    eksNodegroup: string
+    name?: string;
+    tfEnv: string;
+    tfModule: string;
+    awsAccount: string;
+    awsRegion: string;
+    k8sContext: string;
+    k8sNamespace: string;
+    eksNodegroup: string;
 }
 
 export class Instance {
@@ -85,24 +85,24 @@ export interface Deployment {
     nestValues?: boolean;
 }
 interface NamedDeployment extends Deployment {
-    name: string
+    name: string;
 }
 
 export interface ExternalResources {
-    secretPresets?: { [index: string]: object },
-    deployments: { [index: string]: ExternalResource }
+    secretPresets?: { [index: string]: object };
+    deployments: { [index: string]: ExternalResource };
 }
 
 export type ValuesMap = { [index: string]: string | number | boolean | ValuesMap };
 
 export interface ExternalResource {
     service?: {
-        name?: string,
-        address?: string,
-        port?: number
-    },
-    externalSecrets?: ValuesMap,
-    $secretPreset?: string
+        name?: string;
+        address?: string;
+        port?: number;
+    };
+    externalSecrets?: ValuesMap;
+    $secretPreset?: string;
 }
 
 const konfigLogger = new Logger("Konfiguration");
@@ -113,34 +113,18 @@ export type KonfigEnv = {
 }
 
 export class Konfiguration {
-    public instances: InstanceMap;
-    private log: Logger;
-
-    constructor(
-        public name: string,
-        public konfigEnv: KonfigEnv,
-        public props: KonfigProps
-    ) {
-        this.log = new Logger(`Konfiguration:env/${name}`);
-        this.instances = {
-            ...Konfiguration.parseInstances(this),
-            ...Konfiguration.parseExternalResources(this),
-        };
-    }
-
     static getKonfigPath(konfigEnv: KonfigEnv) {
         return path.join(konfigEnv.dir, konfigEnv.filename);
-    }
-
-    get konfigPath() {
-        return Konfiguration.getKonfigPath(this.konfigEnv);
     }
 
     static async read(envName: string, baseDir?: string) {
         konfigLogger.infoBlank();
         konfigLogger.info("Reading konfiguration...");
 
-        const konfigEnv = await Konfiguration.detectKonfigFile(envName, baseDir);
+        const konfigEnv = await Konfiguration.detectKonfigFile(
+            envName,
+            baseDir
+        );
         const konfig = await readFile(Konfiguration.getKonfigPath(konfigEnv));
 
         // TODO: implement file schema validation
@@ -151,7 +135,10 @@ export class Konfiguration {
         );
     }
 
-    static async detectKonfigFile(envName: string, baseDir?: string): Promise<KonfigEnv> {
+    static async detectKonfigFile(
+        envName: string,
+        baseDir?: string
+    ): Promise<KonfigEnv> {
         const dir = baseDir ?? process.cwd();
         const envDir = path.join(dir, `env/${envName}`);
 
@@ -164,16 +151,15 @@ export class Konfiguration {
                 const filename = "config.json";
                 await fs.access(path.join(envDir, filename), fs.constants.R_OK);
                 return { filename, dir: envDir };
-            } catch (e) {
-                const { code } = e as Error & { code: "ENOENT" };
+            } catch (e2) {
+                const { code } = e2 as Error & { code: "ENOENT" };
 
-                if (code == "ENOENT") {
+                if(code == "ENOENT")
                     Logger.root.error(
                         `No konfiguration file found for the ${envName} environment!`
                     );
-                } else {
-                    Logger.root.error(e as string);
-                }
+                else
+                    Logger.root.error(e2 as string);
 
                 process.exit(1);
             }
@@ -216,13 +202,33 @@ export class Konfiguration {
                         // TODO: test this
                         externalSecrets: resource.$secretPreset
                             ? (resources.secretPresets || {})[
-                                    resource.$secretPreset
-                                ]
+                                resource.$secretPreset
+                            ]
                             : {},
                     } as unknown as ValuesMap,
-                }, konfig),
+                },
+                konfig),
             ])
         );
+    }
+
+    public instances: InstanceMap;
+    private log: Logger;
+
+    constructor(
+        public name: string,
+        public konfigEnv: KonfigEnv,
+        public props: KonfigProps
+    ) {
+        this.log = new Logger(`Konfiguration:env/${name}`);
+        this.instances = {
+            ...Konfiguration.parseInstances(this),
+            ...Konfiguration.parseExternalResources(this),
+        };
+    }
+
+    get konfigPath() {
+        return Konfiguration.getKonfigPath(this.konfigEnv);
     }
 
     async readChartDefaultValues(chart: string) {
@@ -259,16 +265,15 @@ export class Konfiguration {
         const filter: string[] = input.argv.slice(1);
 
         konfigLogger.infoBlank();
-        if (filter[0] == "all") {
+        if(filter[0] == "all") {
             this.log.info("Processing all deployments");
 
-            if (filter.length > 1)
+            if(filter.length > 1)
                 this.log.warn(
-                    "Additional instances specified after 'all' keyword, will be ignored."
-                );
+                    "Additional instances specified after 'all' keyword, will be ignored.");
 
             instancePredicate = () => true;
-        } else if (filter[0] == "chart") {
+        } else if(filter[0] == "chart") {
             const charts = filter.slice(1);
             const chartFilter = charts.join(", ");
             this.log.info(
@@ -349,7 +354,7 @@ function externalResourceToDeployment(resource: ExternalResource): Deployment {
     return {
         chart: "external-service",
         values: { ...resource }
-    }
+    };
 }
 
 export function deploymentToString(name: string,
@@ -372,8 +377,9 @@ function externalResourceToString(name: string,
     { service, $secretPreset, externalSecrets }: ExternalResource
 ): string {
     const test = printArgs({
-                "Service": service,
-                "Secrets": externalSecrets})
+        Service: service,
+        Secrets: externalSecrets
+    });
 
     // console.log("the test")
     // console.log(test)

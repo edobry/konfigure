@@ -7,14 +7,15 @@ import Logger from "./logger";
 import { initDtShell, InteractiveShell } from "./shell";
 
 export type Environment = {
-    konfig: Konfiguration,
-    shell: InteractiveShell
+    konfig: Konfiguration;
+    shell: InteractiveShell;
 };
 
 export class CommandContext<T extends Flags> {
-    constructor(private log: Logger, public input: CommandInput<T>, public env: Environment) {}
-
-    static async init<T extends Flags>(log: Logger, input: CommandInput<T>): Promise<CommandContext<T>> {
+    static async init<T extends Flags>(
+        log: Logger,
+        input: CommandInput<T>
+    ): Promise<CommandContext<T>> {
         const { args, flags } = input;
 
         if(!args) throw new Error();
@@ -28,22 +29,28 @@ export class CommandContext<T extends Flags> {
             process.exit(1);
         }
 
-        konfig.logHeader()
+        konfig.logHeader();
 
         const shell = await initDtShell();
 
         return new CommandContext(log, input, { konfig, shell });
     }
 
+    constructor(
+        private log: Logger,
+        public input: CommandInput<T>,
+        public env: Environment
+    ) {}
+
     async initNamespace() {
         const kc = new k8s.KubeConfig();
-        kc.loadFromFile(`${process.env.CA_DT_DIR}/shell/eksconfig.yaml`)
-        
+        kc.loadFromFile(`${process.env.CA_DT_DIR}/shell/eksconfig.yaml`);
+
         let k8sApi: k8s.CoreV1Api;
         try {
             kc.setCurrentContext(this.env.konfig.environment.k8sContext);
             k8sApi = kc.makeApiClient(k8s.CoreV1Api);
-        } catch(e) {
+        } catch (e) {
             this.log.error(e as string);
             process.exit(1);
         }
@@ -55,7 +62,7 @@ export class CommandContext<T extends Flags> {
             const namespace = await k8sApi.readNamespace(name);
             this.log.debug(JSON.stringify(namespace));
             return;
-        } catch(e) {
+        } catch (e) {
             // const { response: { statusCode, body } } = e as UnpackAny<ReturnType<typeof k8sApi.readNamespace>>;
             this.log.error(e as string);
 
@@ -75,12 +82,12 @@ export class CommandContext<T extends Flags> {
             this.log.info("Creating namespace...");
 
             const { response, body } = await k8sApi.createNamespace({
-                metadata: { name: name }
+                metadata: { name: name },
             });
 
-            this.log.info(`Environment initialized!`);
+            this.log.info("Environment initialized!");
             this.log.debugYaml(body);
-        } catch(e) {
+        } catch (e) {
             this.log.error("Namespace creation failed!");
             this.log.error(JSON.stringify(e));
         }
@@ -88,35 +95,35 @@ export class CommandContext<T extends Flags> {
 
     async handleAuth() {
         const account = this.env.konfig.environment.awsAccount;
-        const accountRole = "admin"
+        const accountRole = "admin";
         const profile = `${account}-${accountRole}`;
-        
+
         this.log.infoBlank();
         this.log.info("Checking authentication...");
         try {
             if(this.input.flags.auth) {
                 const authCommand = `awsAuth ${profile}`;
                 if(this.input.flags.dryrun)
-                    this.log.info(`dryrun: ${authCommand}`)
+                    this.log.info(`dryrun: ${authCommand}`);
                 else {
-                    await this.env.shell.runCommand(authCommand)
+                    await this.env.shell.runCommand(authCommand);
                     process.env.AWS_PROFILE = profile;
                 }
             }
 
             const checkAuthCommand = `checkAccountAuthAndFail ${account}`;
             if(this.input.flags.dryrun) {
-                this.log.info(`dryrun: ${checkAuthCommand}`)
+                this.log.info(`dryrun: ${checkAuthCommand}`);
                 return;
             }
-            
-            const { exitcode } = await this.env.shell.runCommand(checkAuthCommand);
+
+            const { exitcode } = await this.env.shell.runCommand(
+                checkAuthCommand
+            );
             this.log.debug(`check exit code: ${exitcode}`);
-            if(exitcode != 0)
-                process.exit(1);
-        }
-        catch(e) {
-            process.exit(1)
+            if(exitcode != 0) process.exit(1);
+        } catch (e) {
+            process.exit(1);
         }
     }
 };

@@ -46,7 +46,7 @@
       "off"
     ],
     "@typescript-eslint/indent": [
-      "error",
+      "warn",
       4
     ],
     "quotes": [
@@ -96,7 +96,14 @@
       }
     ],
     "keyword-spacing": [
-      "error"
+      "error",
+      {
+        "overrides": {
+          "if": { "after": false },
+          "for": { "after": false },
+          "while": { "after": false }
+        }
+      }
     ],
     "brace-style": [
       "error",
@@ -110,8 +117,7 @@
     ],
     "curly": [
       "error",
-      "multi-line",
-      "consistent"
+      "multi"
     ],
     "@typescript-eslint/member-delimiter-style": [
       "error"

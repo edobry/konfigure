@@ -40,7 +40,7 @@ const makeCtx = (flags: ValuesMap, konfig?: Konfiguration) =>
 test("helmClient: updateHelmRepos calls repo update command", async () => {
     await new HelmClient().updateHelmRepos(
         makeCtx({}));
-        
+
     expect(shell.runCommand).toHaveBeenCalledWith(
         expect.stringContaining("repo update"));
 });
@@ -108,7 +108,7 @@ test("helmChart: runChartCommand filters out empty args", async () => {
     await makeChart(konfig).runChartCommand([""], testArg);
 
     expect(shell.runCommand).toHaveBeenCalledWith(
-        expect.not.stringMatching(`  `));
+        expect.not.stringMatching("  "));
 });
 
 //TODO: refactor to test calls on HelmClient instead
