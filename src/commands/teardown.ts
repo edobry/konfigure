@@ -1,4 +1,4 @@
-import BaseCommand, { CommandContext, processDeployments } from '../baseCommand';
+import BaseCommand, { CommandContext, processDeployments } from "../baseCommand";
 
 export default class TeardownCommand extends BaseCommand<typeof TeardownCommand.flags> {
     static description = "tears down instances from the current environment";
