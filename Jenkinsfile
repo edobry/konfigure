@@ -45,7 +45,7 @@ withPipeline(
     withNodejs {
     runLocalDocker(
         imageName: 'node-build',
-        version: 'cdbc678d5ea066ae96cd4e9e615a6f1fc15418b9',
+        version: 'c4cb1e5b92b0d2ea4de4d0ca266913c96c1d20b7',
         repo: 'dataeng-tools',
         dockerfile: 'node.Dockerfile'
     ) {
