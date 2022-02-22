@@ -1,5 +1,5 @@
 import { Environment } from "../src/commandContext";
-import { KonfigProps, Konfiguration, ValuesMap } from "../src/konfiguration";
+import { KonfigEnv, KonfigProps, Konfiguration, ValuesMap } from "../src/konfiguration";
 
 export const input = (flags: ValuesMap, ...argv: string[]) => ({
     flags,
@@ -10,8 +10,10 @@ export const input = (flags: ValuesMap, ...argv: string[]) => ({
 const awsRegion = "eu-west-1";
 export const testEnvName = "test-env";
 export const testEnvDev = `${testEnvName}-dev`;
-export const testEnvDir = `env/${testEnvName}`;
-
+export const testKonfigEnv: KonfigEnv = {
+    filename: "konfig.json",
+    dir: `env/${testEnvName}`
+};
 
 export const testKeyName = "testKey";
 export const overriddenValues = { [testKeyName]: "overriddenValue" };
@@ -37,4 +39,4 @@ export const testEnvConfig = (): KonfigProps => ({
 });
 
 export const makeKonfig = () =>
-    new Konfiguration(testEnvName, testEnvDir, testEnvConfig());
+    new Konfiguration(testEnvName, testKonfigEnv, testEnvConfig());

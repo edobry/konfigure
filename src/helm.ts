@@ -1,12 +1,12 @@
-import { Deployment, Instance, ValuesMap } from "./konfiguration";
-import { Flags } from "./flags";
-
-import * as tmp from "tmp-promise";
-import * as fs from "fs-extra";
 import { basename } from "path";
-import { ShellCommandRunner } from "./shell";
-import Logger from "./logger";
+import * as fs from "fs-extra";
+import * as tmp from "tmp-promise";
 import { CommandContext } from "./commandContext";
+import { Flags } from "./flags";
+import { Deployment, Instance, ValuesMap } from "./konfiguration";
+
+import Logger from "./logger";
+import { ShellCommandRunner } from "./shell";
 import { fromEntries } from "./util";
 
 export class HelmClient {
@@ -17,10 +17,10 @@ export class HelmClient {
     }
 
     async runHelmCommand(shell: ShellCommandRunner, dryrun: boolean, debug: boolean, ...helmArgs: string[]) {
-        const fullCommand = `helm ${debug ? "--debug " : ""}${helmArgs.join(' ')}`;
-        
+        const fullCommand = `helm ${debug ? "--debug " : ""}${helmArgs.join(" ")}`;
+
         this.log.debugBlank();
-        this.log.debug("Running helm command...")
+        this.log.debug("Running helm command...");
         if(dryrun) {
             this.log.info(`dryrun: ${fullCommand}`);
             return;
@@ -35,7 +35,7 @@ export class HelmClient {
 
     async updateHelmRepos<T extends Flags>({ env, input }: CommandContext<T>) {
         this.log.infoBlank();
-        this.log.info(`Updating repositories...`)
+        this.log.info("Updating repositories...");
 
         return this.runHelmCommand(env.shell, input.flags.dryrun, input.flags.debug, "repo", "update");
     }

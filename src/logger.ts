@@ -12,23 +12,18 @@ export default class Logger {
     constructor(name: string, parent?: Logger) {
         const logLevel = process.env.KONFIG_LOG ?? "info";
 
-        this.logger =
-            name == "root"
-                ? pino.final(
-                      pino({
-                          name: name,
-                          level: logLevel,
-                          transport: {
-                              target: "../lib/pinoPretty.js",
-                              options: {
-                                  level: logLevel,
-                              },
-                          },
-                      })
-                  )
-                : (parent || Logger.root).logger.child({
-                      name,
-                  });
+        this.logger = name == "root"
+            ? pino({
+                name: name,
+                level: logLevel,
+                transport: {
+                    target: "../lib/pinoPretty.js",
+                    options: {
+                        level: logLevel,
+                    },
+                }
+            })
+            : (parent || Logger.root).logger.child({ name });
     }
 
     setLevel(level: LevelWithSilent) {

@@ -51,17 +51,17 @@ export default abstract class BaseCommand<T extends Flags> extends Command {
         await this.ctx?.env?.shell.close();
     }
 
-    printMode<T extends Flags>({ flags: { dryrun, testing, auth, debug } }: CommandFlags<T>, test: any) {
+    printMode({ flags: { dryrun, testing, auth, debug } }: CommandFlags<T>, test: any) {
         this.logger.info(`running ${test.name}`);
 
         if(dryrun)
-            this.logger.info("dryrun flag set: printing commands instead of executing")
+            this.logger.info("dryrun flag set: printing commands instead of executing");
         if(testing)
-            this.logger.info("testing flag set: skipping repo updates")
+            this.logger.info("testing flag set: skipping repo updates");
         if(auth)
-            this.logger.info("auth flag set: automatically authenticating")
+            this.logger.info("auth flag set: automatically authenticating");
         if(debug)
-            this.logger.info("debug mode enabled")
+            this.logger.info("debug mode enabled");
 
     }
 }

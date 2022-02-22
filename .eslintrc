@@ -7,7 +7,8 @@
   "plugins": [
     "@typescript-eslint",
     "import",
-    "unicorn"
+    "unicorn",
+    "no-autofix"
   ],
   "parser": "@typescript-eslint/parser",
   "parserOptions": {
@@ -46,9 +47,9 @@
       "off"
     ],
     "@typescript-eslint/indent": [
-      "error",
-      4
+      "off"
     ],
+    "no-autofix/@typescript-eslint/indent": ["warn", 4],
     "quotes": [
       "error",
       "double"
@@ -96,7 +97,14 @@
       }
     ],
     "keyword-spacing": [
-      "error"
+      "error",
+      {
+        "overrides": {
+          "if": { "after": false },
+          "for": { "after": false },
+          "while": { "after": false }
+        }
+      }
     ],
     "brace-style": [
       "error",
@@ -110,8 +118,7 @@
     ],
     "curly": [
       "error",
-      "multi-line",
-      "consistent"
+      "multi"
     ],
     "@typescript-eslint/member-delimiter-style": [
       "error"
@@ -121,7 +128,7 @@
       "always"
     ],
     "max-len": [
-      "error",
+      "warn",
       {
         "code": 150,
         "ignoreUrls": true,
