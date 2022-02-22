@@ -2,7 +2,7 @@ import BaseCommand, { CommandContext, processDeployments } from "../baseCommand"
 
 export default class TeardownCommand extends BaseCommand<typeof TeardownCommand.flags> {
     static description = "tears down instances from the current environment";
-    static strict = false
+    static strict = false;
 
     static flags = BaseCommand.flags;
     static args = BaseCommand.args;
