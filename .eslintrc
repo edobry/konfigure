@@ -7,7 +7,8 @@
   "plugins": [
     "@typescript-eslint",
     "import",
-    "unicorn"
+    "unicorn",
+    "no-autofix"
   ],
   "parser": "@typescript-eslint/parser",
   "parserOptions": {
@@ -46,9 +47,9 @@
       "off"
     ],
     "@typescript-eslint/indent": [
-      "warn",
-      4
+      "off"
     ],
+    "no-autofix/@typescript-eslint/indent": ["warn", 4],
     "quotes": [
       "error",
       "double"

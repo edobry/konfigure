@@ -21,6 +21,7 @@
     "conventional-changelog-conventionalcommits": "^4.4.0",
     "eslint": "^8.2.0",
     "eslint-plugin-import": "^2.25.3",
+    "eslint-plugin-no-autofix": "^1.2.3",
     "eslint-plugin-unicorn": "^38.0.1",
     "globby": "^10.0.2",
     "jest": "^27.4.5",
