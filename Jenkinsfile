@@ -51,7 +51,7 @@ withPipeline(
     ) {
 
     stage('Build') {
-        sh 'npm install'
+        sh 'npm install --include=dev'
         sh 'npm run build'
     }
 
@@ -60,7 +60,8 @@ withPipeline(
     }
 
     stage('Lint') {
-        sh 'npm run precommit'
+        sh 'npm run lint'
+        // sh 'npm run precommit'
     }
     }
 
