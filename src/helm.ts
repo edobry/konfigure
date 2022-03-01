@@ -9,7 +9,11 @@ import Logger from "./logger";
 import { ShellCommandRunner } from "./shell";
 import { fromEntries } from "./util";
 
-export class HelmClient {
+export interface IHelmClient {
+    runHelmCommand: HelmClient["runHelmCommand"];
+    updateHelmRepos: HelmClient["updateHelmRepos"];
+}
+export class HelmClient implements IHelmClient {
     private log: Logger;
 
     constructor() {
@@ -21,6 +25,7 @@ export class HelmClient {
 
         this.log.debugBlank();
         this.log.debug("Running helm command...");
+        this.log.debug(fullCommand);
         if(dryrun) {
             this.log.info(`dryrun: ${fullCommand}`);
             return;
@@ -45,14 +50,14 @@ export const helmClient = new HelmClient();
 
 export class HelmChart<T extends Flags> {
     private log: Logger;
-    private client: HelmClient;
+    private client: IHelmClient;
 
     constructor(
         private name: string,
         private instance: Instance,
         private envValues: ValuesMap,
         private ctx: CommandContext<T>,
-        client?: HelmClient
+        client?: IHelmClient
     ) {
         this.log = new Logger(`${instance.chart}/${name}`);
         this.client = client || helmClient;
@@ -69,7 +74,7 @@ export class HelmChart<T extends Flags> {
             k8sNamespace,
             this.name,
             ...extraArgs,
-        ].filter(x => x);
+        ].filter((x) => x);
 
         return this.client.runHelmCommand(
             this.ctx.env.shell,
@@ -83,11 +88,11 @@ export class HelmChart<T extends Flags> {
         const valueArgs = await this.writeValueFiles();
 
         const {
-            chart,
+            chartPath,
             dep: { source, version },
         } = this.instance;
         const versionArg = !version ? "" : `--version=${version}`;
-        const chartArg = source == "local" ? chart : `fimbulvetr/${chart}`;
+        const chartArg = source == "local" ? chartPath : `fimbulvetr/${chartPath}`;
 
         return this.runChartCommand(
             commandArgs,

@@ -5,25 +5,40 @@ type Level = "fatal" | "error" | "warn" | "info" | "debug" | "trace";
 type LevelWithSilent = Level | "silent";
 
 export default class Logger {
-    static root: Logger = new Logger("root");
+    static loggers: Record<string, Logger> = {};
+
+    static get root() {
+        return Logger.loggers.root;
+    }
+
+    static setGlobalLevel(level: LevelWithSilent) {
+        Object.entries(Logger.loggers).forEach(([, logger]) =>
+            logger.setLevel(level)
+        );
+    }
 
     protected logger: pino.Logger;
 
     constructor(name: string, parent?: Logger) {
         const logLevel = process.env.KONFIG_LOG ?? "info";
 
-        this.logger = name == "root"
-            ? pino({
-                name: name,
-                level: logLevel,
-                transport: {
-                    target: "../lib/pinoPretty.js",
-                    options: {
-                        level: logLevel,
-                    },
-                }
-            })
-            : (parent || Logger.root).logger.child({ name });
+        this.logger =
+            name == "root"
+                ? pino({
+                      name: name,
+                      level: logLevel,
+                      ...(!process.env.JEST_WORKER_ID ? {
+                        transport: {
+                            target: "../lib/pinoPretty.js",
+                            options: {
+                                level: logLevel,
+                            }
+                        }
+                    } : {}),
+                  })
+                : (parent || Logger.root).logger.child({ name });
+
+        Logger.loggers[name] = this;
     }
 
     setLevel(level: LevelWithSilent) {
@@ -66,3 +81,5 @@ export default class Logger {
         this.logger.error(args);
     }
 };
+
+new Logger("root");
