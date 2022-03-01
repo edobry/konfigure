@@ -11,6 +11,7 @@ import { fromEntries } from "./util";
 
 export interface IHelmClient {
     runHelmCommand: HelmClient["runHelmCommand"];
+    updateHelmRepos: HelmClient["updateHelmRepos"];
 }
 export class HelmClient implements IHelmClient {
     private log: Logger;

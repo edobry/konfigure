@@ -1,19 +1,11 @@
-import { CommandContext } from "../src/commandContext";
 import { HelmChart, HelmClient, IHelmClient } from "../src/helm";
 import { Deployment, Instance, Konfiguration, ValuesMap } from "../src/konfiguration";
 import Logger from "../src/logger";
-import { InteractiveShell } from "../src/shell";
-import { input, makeKonfig } from "./testUtil";
-
-const shell = {
-    runCommand: jest.fn(async () => ({ exitcode: 0, output: "" })),
-};
+import { input, makeCtx, makeKonfig, shell } from "./testUtil";
 
 const helmClient = {
     runHelmCommand: jest.fn(async () => {}),
 };
-
-Logger.root.setLevel("error");
 
 test("helmClient: runHelmCommand does not run command on dryrun flag", async () => {
     await new HelmClient().runHelmCommand(shell, true, false);
@@ -34,16 +26,9 @@ test("helmClient: runHelmCommand appends helmArgs to command", async () => {
         expect.stringContaining(testArg));
 });
 
-
-const makeCtx = (flags: ValuesMap, konfig?: Konfiguration) =>
-    new CommandContext(Logger.root, input(flags), {
-        shell: shell as unknown as InteractiveShell,
-        konfig: konfig || {} as Konfiguration,
-    });
-
 test("helmClient: updateHelmRepos calls repo update command", async () => {
     await new HelmClient().updateHelmRepos(
-        makeCtx({}));
+        makeCtx());
 
     expect(shell.runCommand).toHaveBeenCalledWith(
         expect.stringContaining("repo update"));
@@ -51,7 +36,7 @@ test("helmClient: updateHelmRepos calls repo update command", async () => {
 
 test("helmClient: updateHelmRepos passes flags thru", async () => {
     await new HelmClient().updateHelmRepos(
-        makeCtx({ debug: true }));
+        makeCtx(input({ debug: true })));
 
     expect(shell.runCommand).toHaveBeenCalledWith(
         expect.stringContaining("--debug"));
@@ -65,7 +50,7 @@ const makeChart = (name: string, dep: Deployment, konfig: Konfiguration, flags?:
         dep,
         konfig
     );
-    return new HelmChart(chartName, instance, {}, makeCtx(flags ?? {}, konfig), client);
+    return new HelmChart(chartName, instance, {}, makeCtx(input(flags ?? {}), konfig), client);
 };
 const makeSimpleChart = (
     konfig: Konfiguration,

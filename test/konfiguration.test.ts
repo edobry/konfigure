@@ -1,16 +1,6 @@
-import { Deployment, ExternalResource, KonfigProps, Konfiguration, ValuesMap } from "../src/konfiguration";
+import { Konfiguration } from "../src/konfiguration";
 import Logger from "../src/logger";
-import { deepSet } from "../src/util";
-import { input, overriddenValues, testEnvConfig, testKonfigEnv, testEnvName, testKeyName } from "./testUtil";
-
-Logger.root.setLevel("error");
-
-const resourceName = (name: string) => (id: number) => `${name}${id}`;
-
-const chart = resourceName("chart");
-const dep = resourceName("dep");
-const secretPreset = resourceName("secretPreset");
-const externalResource = resourceName("externalResource");
+import { input, overriddenValues, testEnvConfig, testKonfigEnv, testEnvName, testKeyName, dummyCommand, makeKonfig, dep, chart, addDeployment, secretPreset, addSecretPreset, addExternalResource, externalResource, addChart } from "./testUtil";
 
 const x = {
     [dep(1)]: {
@@ -28,36 +18,14 @@ const x = {
         disabled: true
     }
 };
-const dummyCommand = "a-command";
 
 test("parses konfig", () => {
     expect(new Konfiguration(testEnvName, testKonfigEnv, testEnvConfig())).toBeInstanceOf(Konfiguration);
 });
 
-type Mapper<T> = (x: T) => T;
-type KonfigMapper = Mapper<KonfigProps>;
-
-const testKonfig = (...konfigMappers: Mapper<KonfigProps>[]) =>
-    new Konfiguration(testEnvName, testKonfigEnv,
-        konfigMappers.reduce(
-            (acc, map) => map(acc),
-            testEnvConfig()));
-
-const addResource = <T extends object>(idFunc: ReturnType<typeof resourceName>, ...path: string[]) =>
-    (id: number, props: T): KonfigMapper =>
-        (konfig: KonfigProps) => {
-            deepSet(konfig, props, ...path, idFunc(id));
-            return konfig;
-        };
-
-const addChart = addResource<Deployment>(chart, "chartDefaults");
-const addDeployment = addResource<Deployment>(dep, "deployments");
-const addExternalResource = addResource<ExternalResource>(externalResource, "externalResources", "deployments");
-const addSecretPreset = addResource<ValuesMap>(secretPreset, "externalResources", "secretPresets");
-
 test("parseInstances: handles local chart path", () => {
     expect(
-        testKonfig(addDeployment(1, {
+        makeKonfig(addDeployment(1, {
             chart: `/local/path/to/${chart(1)}`,
             source: "local",
         })).instances[dep(1)].chart
@@ -70,7 +38,7 @@ test("parseExternalResources: handles secretPresets", () => {
         password: `/test/${secretPreset(1)}/password`,
     };
 
-    const konfig = testKonfig(
+    const konfig = makeKonfig(
         addSecretPreset(1, secretPreset1),
         addExternalResource(1, {
             service: {
@@ -89,7 +57,7 @@ test("parseExternalResources: handles secretPresets", () => {
 
 test("Instance.prepareValues: chart default values inherited", async () => {
     expect(
-        await testKonfig(
+        await makeKonfig(
             addChart(1, {
                 chart: chart(1),
                 version: "1.1.0",
@@ -105,7 +73,7 @@ test("Instance.prepareValues: inline chart default values override extenral char
     const chartInlineValues = { [testKeyName]: "testValue" };
 
     expect(
-        await testKonfig(
+        await makeKonfig(
             addChart(1, {
                 chart: chart(1),
                 version: "1.1.0",
@@ -120,7 +88,7 @@ test("Instance.prepareValues: inline chart default values override extenral char
 
 test("filterDeployments: matches all", () => {
     expect(
-        testKonfig(
+        makeKonfig(
             addChart(1, {
                 chart: chart(1),
             }),
@@ -145,7 +113,7 @@ test("filterDeployments: matches all", () => {
 
 test("filterDeployments: matches by chart", () => {
     expect(
-        testKonfig(
+        makeKonfig(
             addChart(1, {
                 chart: chart(1),
             }),
@@ -164,7 +132,7 @@ test("filterDeployments: matches by chart", () => {
 
 test("filterDeployments: matches by multiple charts", () => {
     expect(
-        testKonfig(
+        makeKonfig(
             addChart(1, {
                 chart: chart(1),
             }),
@@ -189,7 +157,7 @@ test("filterDeployments: matches by multiple charts", () => {
 
 test("filterDeployments: matches local chart", () => {
     expect(
-        testKonfig(
+        makeKonfig(
             addChart(1, {
                 chart: chart(1),
             }),
@@ -203,7 +171,7 @@ test("filterDeployments: matches local chart", () => {
 
 test("filterDeployments: matches by single instance", () => {
     expect(
-        testKonfig(
+        makeKonfig(
             addChart(1, {
                 chart: chart(1),
             }),
@@ -216,7 +184,7 @@ test("filterDeployments: matches by single instance", () => {
 
 test("filterDeployments: matches by multiple instances", () => {
     expect(
-        testKonfig(
+        makeKonfig(
             addChart(1, {
                 chart: chart(1),
             }),
@@ -232,7 +200,7 @@ test("filterDeployments: matches by multiple instances", () => {
 
 test("filterDeployments: not match nonexistent", () => {
     expect(
-        testKonfig(
+        makeKonfig(
             addChart(1, {
                 chart: chart(1),
             }),
@@ -248,7 +216,7 @@ test("filterDeployments: not match nonexistent", () => {
 
 test("filterDeployments: not match disabled", () => {
     expect(
-        testKonfig(
+        makeKonfig(
             addChart(1, {
                 chart: chart(1),
             }),
@@ -263,7 +231,7 @@ test("filterDeployments: not match disabled", () => {
 
 test("filterDeployments: not match cdDisabled in ci mode", () => {
     expect(
-        testKonfig(
+        makeKonfig(
             addChart(1, {
                 chart: chart(1),
             }),
