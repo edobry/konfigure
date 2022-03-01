@@ -87,11 +87,11 @@ export class HelmChart<T extends Flags> {
         const valueArgs = await this.writeValueFiles();
 
         const {
-            chart,
+            chartPath,
             dep: { source, version },
         } = this.instance;
         const versionArg = !version ? "" : `--version=${version}`;
-        const chartArg = source == "local" ? chart : `fimbulvetr/${chart}`;
+        const chartArg = source == "local" ? chartPath : `fimbulvetr/${chartPath}`;
 
         return this.runChartCommand(
             commandArgs,

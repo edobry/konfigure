@@ -43,6 +43,10 @@ export class Instance {
             : this.dep.chart;
     }
 
+    get chartPath() {
+        return this.dep.chart;
+    }
+
     isEnabled(input: CommandInput<any>): boolean {
         const { disabled, cdDisabled } = this.dep;
 
