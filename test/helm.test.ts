@@ -1,12 +1,16 @@
 import { CommandContext } from "../src/commandContext";
-import { HelmChart, HelmClient } from "../src/helm";
-import { Instance, Konfiguration, ValuesMap } from "../src/konfiguration";
+import { HelmChart, HelmClient, IHelmClient } from "../src/helm";
+import { Deployment, Instance, Konfiguration, ValuesMap } from "../src/konfiguration";
 import Logger from "../src/logger";
 import { InteractiveShell } from "../src/shell";
 import { input, makeKonfig } from "./testUtil";
 
 const shell = {
     runCommand: jest.fn(async () => ({ exitcode: 0, output: "" })),
+};
+
+const helmClient = {
+    runHelmCommand: jest.fn(async () => {}),
 };
 
 Logger.root.setLevel("error");
@@ -54,18 +58,26 @@ test("helmClient: updateHelmRepos passes flags thru", async () => {
 });
 
 const chartName = "test-chart";
-const makeChart = (konfig: Konfiguration, flags?: ValuesMap) => {
+const instanceName = "test-instance";
+const makeChart = (name: string, dep: Deployment, konfig: Konfiguration, flags?: ValuesMap, client?: IHelmClient) => {
     const instance = new Instance(
-        "test-instance",
-        { chart: chartName },
+        name,
+        dep,
         konfig
     );
-    return new HelmChart(chartName, instance, {}, makeCtx(flags ?? {}, konfig));
+    return new HelmChart(chartName, instance, {}, makeCtx(flags ?? {}, konfig), client);
+};
+const makeSimpleChart = (
+    konfig: Konfiguration,
+    flags?: ValuesMap,
+    client?: IHelmClient
+) => {
+    return makeChart(instanceName, { chart: chartName }, konfig, flags, client);
 };
 
 test("helmChart: runChartCommand prepends command args", async () => {
     const konfig = makeKonfig();
-    await makeChart(konfig).runChartCommand([testArg]);
+    await makeSimpleChart(konfig).runChartCommand([testArg]);
 
     expect(shell.runCommand).toHaveBeenCalledWith(
         expect.stringMatching(`^helm ${testArg}`));
@@ -73,7 +85,7 @@ test("helmChart: runChartCommand prepends command args", async () => {
 
 test("helmChart: runChartCommand sets context", async () => {
     const konfig = makeKonfig();
-    await makeChart(konfig).runChartCommand([""]);
+    await makeSimpleChart(konfig).runChartCommand([""]);
 
     expect(shell.runCommand).toHaveBeenCalledWith(
         expect.stringContaining(`--kube-context ${konfig.props.environment.k8sContext}`));
@@ -81,7 +93,7 @@ test("helmChart: runChartCommand sets context", async () => {
 
 test("helmChart: runChartCommand sets namespace", async () => {
     const konfig = makeKonfig();
-    await makeChart(konfig).runChartCommand([""]);
+    await makeSimpleChart(konfig).runChartCommand([""]);
 
     expect(shell.runCommand).toHaveBeenCalledWith(
         expect.stringContaining(`--namespace ${konfig.props.environment.k8sNamespace}`));
@@ -89,7 +101,7 @@ test("helmChart: runChartCommand sets namespace", async () => {
 
 test("helmChart: runChartCommand passes in chart name", async () => {
     const konfig = makeKonfig();
-    await makeChart(konfig).runChartCommand([""]);
+    await makeSimpleChart(konfig).runChartCommand([""]);
 
     expect(shell.runCommand).toHaveBeenCalledWith(
         expect.stringContaining(chartName));
@@ -97,7 +109,7 @@ test("helmChart: runChartCommand passes in chart name", async () => {
 
 test("helmChart: runChartCommand appends extra args", async () => {
     const konfig = makeKonfig();
-    await makeChart(konfig).runChartCommand([""], testArg);
+    await makeSimpleChart(konfig).runChartCommand([""], testArg);
 
     expect(shell.runCommand).toHaveBeenCalledWith(
         expect.stringMatching(`${testArg} 2>&1$`));
@@ -105,7 +117,7 @@ test("helmChart: runChartCommand appends extra args", async () => {
 
 test("helmChart: runChartCommand filters out empty args", async () => {
     const konfig = makeKonfig();
-    await makeChart(konfig).runChartCommand([""], testArg);
+    await makeSimpleChart(konfig).runChartCommand([""], testArg);
 
     expect(shell.runCommand).toHaveBeenCalledWith(
         expect.not.stringMatching("  "));
@@ -114,7 +126,7 @@ test("helmChart: runChartCommand filters out empty args", async () => {
 //TODO: refactor to test calls on HelmClient instead
 test("helmChart: runChartCommand passes flags thru", async () => {
     const konfig = makeKonfig();
-    await makeChart(konfig, { debug: true }).runChartCommand([""], testArg);
+    await makeSimpleChart(konfig, { debug: true }).runChartCommand([""], testArg);
 
     expect(shell.runCommand).toHaveBeenCalledWith(
         expect.stringContaining("--debug"));
@@ -122,8 +134,20 @@ test("helmChart: runChartCommand passes flags thru", async () => {
 
 test("helmChart: uninstall runs command", async () => {
     const konfig = makeKonfig();
-    await makeChart(konfig, {}).uninstall();
+    await makeSimpleChart(konfig, {}).uninstall();
 
     expect(shell.runCommand).toHaveBeenCalledWith(
         expect.stringContaining("uninstall"));
+});
+
+test("helmChart: local charts handled", async () => {
+    const chartPath = `/path/to/chart/${chartName}`;
+
+    const konfig = makeKonfig();
+    await makeChart(instanceName, {
+        chart: chartPath,
+        source: "local"
+    }, konfig, {}, helmClient).runChartValuesCommand();
+
+    expect(helmClient.runHelmCommand.mock.calls[0]).toContainEqual(chartPath);
 });
