@@ -1,4 +1,4 @@
-import { Environment } from "../src/commandContext";
+import merge from "deepmerge";
 import { KonfigEnv, KonfigProps, Konfiguration, ValuesMap } from "../src/konfiguration";
 
 export const input = (flags: ValuesMap, ...argv: string[]) => ({
@@ -38,5 +38,5 @@ export const testEnvConfig = (): KonfigProps => ({
     },
 });
 
-export const makeKonfig = () =>
-    new Konfiguration(testEnvName, testKonfigEnv, testEnvConfig());
+export const makeKonfig = (props?: Partial<KonfigProps>) =>
+    new Konfiguration(testEnvName, testKonfigEnv, merge(testEnvConfig(), props ?? {}));
