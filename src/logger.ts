@@ -27,12 +27,14 @@ export default class Logger {
                 ? pino({
                       name: name,
                       level: logLevel,
-                      transport: {
-                          target: "../lib/pinoPretty.js",
-                          options: {
-                              level: logLevel,
-                          },
-                      },
+                      ...(!process.env.JEST_WORKER_ID ? {
+                        transport: {
+                            target: "../lib/pinoPretty.js",
+                            options: {
+                                level: logLevel,
+                            }
+                        }
+                    } : {}),
                   })
                 : (parent || Logger.root).logger.child({ name });
 
