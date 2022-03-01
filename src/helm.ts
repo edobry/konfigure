@@ -21,6 +21,7 @@ export class HelmClient {
 
         this.log.debugBlank();
         this.log.debug("Running helm command...");
+        this.log.debug(fullCommand);
         if(dryrun) {
             this.log.info(`dryrun: ${fullCommand}`);
             return;

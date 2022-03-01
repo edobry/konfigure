@@ -37,6 +37,10 @@ export default abstract class BaseCommand<T extends Flags> extends Command {
 
     async init(): Promise<void> {
         const input = await this.parse(this.constructor as Interfaces.Input<T>) as CommandInput<T>;
+
+        if(input.flags.debug)
+            Logger.setGlobalLevel("debug");
+
         this.printMode(input, this.constructor);
         this.ctx = await CommandContext.init<T>(this.logger, input);
     }

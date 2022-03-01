@@ -1,12 +1,11 @@
-import { CommandInput } from "./baseCommand";
 import { CommandContext } from "./commandContext";
 import { Flags } from "./flags";
 import { HelmChart, helmClient } from "./helm";
-import { Konfiguration } from "./konfiguration";
 import Logger from "./logger";
-import { initDtShell, InteractiveShell } from "./shell";
 
-export async function processDeployments<T extends Flags>(ctx: CommandContext<T>, chartHandler: (chart: HelmChart<T>) => Promise<any>, skipRepoUpdate?: boolean) {
+export async function processDeployments<T extends Flags>(
+    ctx: CommandContext<T>, chartHandler: (chart: HelmChart<T>) => Promise<any>, skipRepoUpdate?: boolean
+) {
     const { env, input } = ctx;
 
     const instances = env.konfig.filterDeployments<T>(input);
