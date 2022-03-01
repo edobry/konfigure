@@ -1,11 +1,6 @@
 import { HelmChart, HelmClient, IHelmClient } from "../src/helm";
 import { Deployment, Instance, Konfiguration, ValuesMap } from "../src/konfiguration";
-import Logger from "../src/logger";
-import { input, makeCtx, makeKonfig, shell } from "./testUtil";
-
-const helmClient = {
-    runHelmCommand: jest.fn(async () => {}),
-};
+import { helmClient, input, makeCtx, makeKonfig, shell } from "./testUtil";
 
 test("helmClient: runHelmCommand does not run command on dryrun flag", async () => {
     await new HelmClient().runHelmCommand(shell, true, false);

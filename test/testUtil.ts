@@ -58,6 +58,10 @@ export const makeKonfig = (...konfigMappers: Mapper<KonfigProps>[]) =>
 export const shell = {
     runCommand: jest.fn(async () => ({ exitcode: 0, output: "" })),
 };
+export const helmClient = {
+    runHelmCommand: jest.fn(async () => {}),
+    updateHelmRepos: jest.fn(async () => {}),
+};
 
 export const dummyCommand = "a-command";
 export const makeCtx = <T extends Flags>(cmdInput?: CommandInput<T>, konfig?: Konfiguration) =>

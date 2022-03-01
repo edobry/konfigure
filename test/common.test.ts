@@ -1,12 +1,7 @@
 import { processDeployments } from "../src/common";
 import { Deployment } from "../src/konfiguration";
-import Logger from "../src/logger";
-import { addDeployment, chart, dummyCommand, input, makeCtx, makeKonfig } from "./testUtil";
+import { addDeployment, chart, dummyCommand, helmClient, input, makeCtx, makeKonfig } from "./testUtil";
 
-const helmClient = {
-    runHelmCommand: jest.fn(async () => {}),
-    updateHelmRepos: jest.fn(async () => {}),
-};
 
 const localChart: Deployment = {
     chart: `/local/path/to/${chart(1)}`,

@@ -1,5 +1,4 @@
 import { Konfiguration } from "../src/konfiguration";
-import Logger from "../src/logger";
 import { input, overriddenValues, testEnvConfig, testKonfigEnv, testEnvName, testKeyName, dummyCommand, makeKonfig, dep, chart, addDeployment, secretPreset, addSecretPreset, addExternalResource, externalResource, addChart } from "./testUtil";
 
 const x = {
