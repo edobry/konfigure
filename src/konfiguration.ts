@@ -47,6 +47,14 @@ export class Instance {
         return this.dep.chart;
     }
 
+    get type() {
+        return this.dep.type ?? "helm";
+    }
+
+    get source() {
+        return this.dep.source ?? "remote";
+    }
+
     isEnabled(input: CommandInput<any>): boolean {
         const { disabled, cdDisabled } = this.dep;
 

@@ -18,9 +18,12 @@ export async function processDeployments<T extends Flags>(
         return;
     }
 
-    // TODO: check if helm charts present
-    if(!input.flags.testing && !skipRepoUpdate)
-        await (helmClient ?? rootHelmClient).updateHelmRepos(ctx);
+    const remoteHelmChartsPresent = instances.some(([n, i]) =>
+        i.type == "helm" &&
+        i.source == "remote");
+
+    if(!input.flags.testing && !skipRepoUpdate && remoteHelmChartsPresent)
+        await(helmClient ?? rootHelmClient).updateHelmRepos(ctx);
 
     const envValues = {
         region: env.konfig?.environment.awsRegion,
