@@ -25,8 +25,7 @@ export class CommandContext<T extends Flags> {
         try {
             konfig = await Konfiguration.read(envName, flags["base-dir"]);
         } catch (e) {
-            log.error(e as string);
-            process.exit(1);
+            log.fatal(e as Error);
         }
 
         konfig.logHeader();

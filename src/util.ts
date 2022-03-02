@@ -9,6 +9,7 @@ import {
 import * as fs from "fs-extra";
 import * as yaml from "js-yaml";
 import { ValuesMap } from "./konfiguration";
+import Logger from "./logger";
 
 export const pretty = new TemplateTag(
     stripIndentTransformer("initial"),
@@ -79,8 +80,14 @@ export async function readFile(filePath: string): Promise<ValuesMap> {
     const fileContents = await fs.readFile(filePath, { encoding: "UTF-8" });
 
     switch (path.extname(filePath)) {
-        case ".json":
-            return JSON.parse(fileContents);
+        case ".json": {
+            try {
+                return JSON.parse(fileContents);
+            } catch (e) {
+                Logger.root.error(`Unable to parse JSON file ${filePath}`);
+                throw e;
+            }
+        }
         case ".yaml":
             return yaml.load(fileContents) as ValuesMap;
         default:

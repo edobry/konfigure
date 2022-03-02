@@ -80,6 +80,13 @@ export default class Logger {
     error(...args: string[]) {
         this.logger.error(args);
     }
+
+    fatal(...args: Error[]): never {
+        this.logger.fatal(args[0].message);
+        //TODO: ideally we wouldnt just throw here
+        //TODO: but pino doesnt properly flush on exit
+        throw args[0];
+    }
 };
 
 new Logger("root");
