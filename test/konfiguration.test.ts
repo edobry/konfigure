@@ -31,6 +31,28 @@ test("parseInstances: handles local chart path", () => {
     ).toEqual(chart(1));
 });
 
+test("parseExternalResources: handles externalSecrets", () => {
+    const secret = {
+        username: "/test/secret/username",
+        password: "/test/secret/password",
+    };
+
+    const konfig = makeKonfig(
+        addExternalResource(1, {
+            service: {
+                name: "my-service-name.com",
+            },
+            externalSecrets: secret,
+        })
+    );
+
+    expect(
+        konfig.instances[externalResource(1)].dep.values
+    ).toMatchObject({
+        externalSecrets: secret
+    });
+});
+
 test("parseExternalResources: handles secretPresets", () => {
     const secretPreset1 = {
         username: `/test/${secretPreset(1)}/username`,
