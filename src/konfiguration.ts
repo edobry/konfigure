@@ -210,13 +210,13 @@ export class Konfiguration {
                 new Instance(name, {
                     chart: "external-service",
                     values: {
-                        ...resource,
                         // TODO: test this
                         externalSecrets: resource.$secretPreset
                             ? (resources.secretPresets || {})[
                                 resource.$secretPreset
                             ]
                             : {},
+                        ...resource,
                     } as unknown as ValuesMap,
                 },
                 konfig),
@@ -348,7 +348,7 @@ export class Konfiguration {
                 ${Object.entries(this.props.deployments)
                     .map(([name, dep]) => deploymentToString(name, dep))
                     .join("\n\n")}
-            
+
             External resources:
 
                 ${Object.entries(this.props.externalResources.deployments)
