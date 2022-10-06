@@ -100,6 +100,7 @@ interface NamedDeployment extends Deployment {
     name: string;
 }
 
+const ExternalServiceChart = "external-service";
 export interface ExternalResources {
     secretPresets?: { [index: string]: object };
     deployments: { [index: string]: ExternalResource };
@@ -205,10 +206,11 @@ export class Konfiguration {
         const resources: ExternalResources = konfig.props.externalResources;
 
         return Object.fromEntries(
-            Object.entries(resources.deployments).map(([name, resource]) => [
-                name,
-                new Instance(name, {
-                    chart: "external-service",
+            Object.entries(resources.deployments).map(([name, resource]) => {
+                const { values = {}, ...chartDefaults } =
+                    konfig.props.chartDefaults[ExternalServiceChart] || {};
+
+                const props = {
                     values: {
                         // TODO: test this
                         externalSecrets: resource.$secretPreset
@@ -218,9 +220,14 @@ export class Konfiguration {
                             : {},
                         ...resource,
                     } as unknown as ValuesMap,
-                },
-                konfig),
-            ])
+                    ...chartDefaults
+                };
+
+                if(!props.chart)
+                    props.chart = ExternalServiceChart;
+
+                return [name, new Instance(name, props, konfig)];
+            })
         );
     }
 
