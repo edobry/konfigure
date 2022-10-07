@@ -2,7 +2,7 @@ import merge from "deepmerge";
 import { CommandInput } from "../src/baseCommand";
 import { CommandContext } from "../src/commandContext";
 import { Flags } from "../src/flags";
-import { Deployment, ExternalResource, KonfigEnv, KonfigProps, Konfiguration, ValuesMap } from "../src/konfiguration";
+import { Deployment, ExternalResource, ExternalServiceChart, KonfigEnv, KonfigProps, Konfiguration, ValuesMap } from "../src/konfiguration";
 import Logger from "../src/logger";
 import { InteractiveShell } from "../src/shell";
 import { deepSet } from "../src/util";
@@ -71,7 +71,7 @@ export const makeCtx = <T extends Flags>(cmdInput?: CommandInput<T>, konfig?: Ko
     });
 
 
-const addResource =
+export const addResource =
     <T extends object>(
         idFunc: ReturnType<typeof resourceName>,
         ...path: string[]
@@ -90,7 +90,6 @@ export const dep = resourceName("dep");
 export const secretPreset = resourceName("secretPreset");
 export const externalResource = resourceName("externalResource");
 
-
 export const addChart = addResource<Deployment>(chart, "chartDefaults");
 export const addDeployment = addResource<Deployment>(dep, "deployments");
 export const addExternalResource = addResource<ExternalResource>(
@@ -103,3 +102,6 @@ export const addSecretPreset = addResource<ValuesMap>(
     "externalResources",
     "secretPresets"
 );
+
+const externalServiceChartSetter = addResource<Deployment>(() => ExternalServiceChart, "chartDefaults");
+export const addExternalServiceChart = (props: Deployment) => externalServiceChartSetter(1, props);
