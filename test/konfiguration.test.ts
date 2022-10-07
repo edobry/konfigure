@@ -1,5 +1,5 @@
-import { Konfiguration } from "../src/konfiguration";
-import { input, overriddenValues, testEnvConfig, testKonfigEnv, testEnvName, testKeyName, dummyCommand, makeKonfig, dep, chart, addDeployment, secretPreset, addSecretPreset, addExternalResource, externalResource, addChart } from "./testUtil";
+import { ExternalServiceChart, Konfiguration } from "../src/konfiguration";
+import { input, overriddenValues, testEnvConfig, testKonfigEnv, testEnvName, testKeyName, dummyCommand, makeKonfig, dep, chart, addDeployment, secretPreset, addSecretPreset, addExternalResource, externalResource, addChart, addExternalServiceChart } from "./testUtil";
 
 const x = {
     [dep(1)]: {
@@ -76,6 +76,24 @@ test("parseExternalResources: handles secretPresets", () => {
     });
 });
 
+
+test("parseExternalResources: chart default values inherited", async () => {
+    const expectedVersion = "1.1.0";
+
+    expect(makeKonfig(
+        addExternalServiceChart({
+            chart: ExternalServiceChart,
+            version: expectedVersion,
+        }),
+        addExternalResource(1, {
+            service: {
+                name: "my-service-name.com",
+            },
+        })
+    ).instances[externalResource(1)].dep.version).toEqual(expectedVersion);
+});
+
+
 test("Instance.prepareValues: chart default values inherited", async () => {
     expect(
         await makeKonfig(
@@ -90,7 +108,7 @@ test("Instance.prepareValues: chart default values inherited", async () => {
     ).toContain(overriddenValues);
 });
 
-test("Instance.prepareValues: inline chart default values override extenral chart default values", async () => {
+test("Instance.prepareValues: inline chart default values override external chart default values", async () => {
     const chartInlineValues = { [testKeyName]: "testValue" };
 
     expect(

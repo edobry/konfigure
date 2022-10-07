@@ -100,7 +100,7 @@ interface NamedDeployment extends Deployment {
     name: string;
 }
 
-const ExternalServiceChart = "external-service";
+export const ExternalServiceChart = "external-service";
 export interface ExternalResources {
     secretPresets?: { [index: string]: object };
     deployments: { [index: string]: ExternalResource };
