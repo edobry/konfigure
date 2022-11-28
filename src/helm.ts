@@ -1,5 +1,6 @@
 import { basename } from "path";
 import * as fs from "fs-extra";
+import * as dir from "node-dir";
 import * as tmp from "tmp-promise";
 import { CommandContext } from "./commandContext";
 import { Flags } from "./flags";
@@ -114,29 +115,18 @@ export class HelmChart<T extends Flags> {
         await this.runChartValuesCommand("template", `--output-dir ${path}`);
 
         this.log.debug(`Reading output directory ${path}`);
-        const filenames = await fs.readdir(
-            `${path}/${basename(this.instance.chart)}/templates`
-        );
+        const outputDir = `${path}/${basename(this.instance.chart)}`;
+        const filenames = await dir.promiseFiles(outputDir);
         const files = fromEntries(
             await Promise.all(
-                filenames.map(
-                    async (x) =>
-                        [
-                            x,
-                            await fs.readFile(
-                                `${path}/${basename(
-                                    this.instance.chart
-                                )}/templates/${x}`,
-                                "utf-8"
-                            ),
-                        ] as [string, string]
-                )
+                filenames.map(async (x) =>
+                    [x, await fs.readFile(x, "utf-8")] as [string, string])
             )
         );
         await cleanup();
 
         Object.entries(files).forEach(([name, file]) => {
-            this.log.info(`Rendered manifest ${name}:`);
+            this.log.info(`Rendered manifest ${name.replace(`${outputDir}/`, "")}:`);
             this.log.info(file);
         });
     }

@@ -16,6 +16,7 @@
   "devDependencies": {
     "@oclif/test": "^2",
     "@types/jest": "^27.0.3",
+    "@types/node-dir": "^0.0.34",
     "@typescript-eslint/eslint-plugin": "^5.12.0",
     "@typescript-eslint/parser": "^5.7.0",
     "conventional-changelog-conventionalcommits": "^4.4.0",
@@ -83,6 +84,7 @@
     "deepmerge": "^4.2.2",
     "fs-extra": "^10.0.0",
     "js-yaml": "^4.1.0",
+    "node-dir": "^0.1.17",
     "pino": "^7.8.0",
     "pino-pretty": "^7.5.1",
     "tmp": "^0.2.1",
