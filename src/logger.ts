@@ -62,11 +62,11 @@ export default class Logger {
     }
 
     debugYaml(object: any) {
-        this.logger.debug(prettyPrintYaml(object));
+        this.logger.debug([prettyPrintYaml(object)]);
     }
 
     debugJson(object: any) {
-        this.logger.debug(prettyPrintJson(object));
+        this.logger.debug([prettyPrintJson(object)]);
     }
 
     trace(...args: string[]) {
