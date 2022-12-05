@@ -19,7 +19,7 @@ export interface KonfigProps {
     externalResources: ExternalResources;
 }
 
-interface Environment {
+export interface Environment {
     name?: string;
     tfEnv: string;
     tfModule: string;

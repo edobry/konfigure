@@ -11,6 +11,8 @@ export type Environment = {
     shell: InteractiveShell;
 };
 
+export type K8sNamespaceApi = Pick<k8s.CoreV1Api, "readNamespace" | "createNamespace">;
+
 export class CommandContext<T extends Flags> {
     static async init<T extends Flags>(
         log: Logger,
@@ -41,7 +43,7 @@ export class CommandContext<T extends Flags> {
         public env: Environment
     ) {}
 
-    async initNamespace() {
+    initK8sApi(): K8sNamespaceApi {
         const kc = new k8s.KubeConfig();
         kc.loadFromFile(`${process.env.CA_DT_DIR}/shell/eksconfig.yaml`);
 
@@ -54,7 +56,13 @@ export class CommandContext<T extends Flags> {
             process.exit(1);
         }
 
-        const name = this.env.konfig.name;
+        return k8sApi;
+    }
+
+    async initNamespace(k8sApi?: K8sNamespaceApi) {
+        if(!k8sApi)
+            k8sApi = this.initK8sApi();
+
         const envName = this.env.konfig.name;
         const nsName = this.env.konfig.environment.k8sNamespace || envName;
 
