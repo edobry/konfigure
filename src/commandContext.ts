@@ -55,10 +55,12 @@ export class CommandContext<T extends Flags> {
         }
 
         const name = this.env.konfig.name;
+        const envName = this.env.konfig.name;
+        const nsName = this.env.konfig.environment.k8sNamespace || envName;
 
         try {
             this.log.debug("fetching namespace");
-            const namespace = await k8sApi.readNamespace(name);
+            const namespace = await k8sApi.readNamespace(nsName);
             this.log.debug(JSON.stringify(namespace));
             return;
         } catch (e) {
@@ -77,11 +79,11 @@ export class CommandContext<T extends Flags> {
 
         try {
             this.log.infoBlank();
-            this.log.info(`Initializing environment '${name}'...`);
+            this.log.info(`Initializing environment '${envName}' with namespace '${nsName}'...`);
             this.log.info("Creating namespace...");
 
             const { response, body } = await k8sApi.createNamespace({
-                metadata: { name: name },
+                metadata: { name: nsName },
             });
 
             this.log.info("Environment initialized!");
