@@ -2,7 +2,7 @@ import merge from "deepmerge";
 import { CommandInput } from "../src/baseCommand";
 import { CommandContext } from "../src/commandContext";
 import { Flags } from "../src/flags";
-import { Deployment, ExternalResource, ExternalServiceChart, KonfigEnv, KonfigProps, Konfiguration, ValuesMap } from "../src/konfiguration";
+import { Deployment, Environment, ExternalResource, ExternalServiceChart, KonfigEnv, KonfigProps, Konfiguration, ValuesMap } from "../src/konfiguration";
 import Logger from "../src/logger";
 import { InteractiveShell } from "../src/shell";
 import { deepSet } from "../src/util";
@@ -35,9 +35,9 @@ const testEnv = {
     k8sNamespace: testEnvDev,
     eksNodegroup: `${testEnvName}-${awsRegion}a-workers`,
 };
-export const testEnvConfig = (): KonfigProps => ({
+export const testEnvConfig = (environment: Environment = testEnv): KonfigProps => ({
     apiVersion: "v4.15.0",
-    environment: testEnv,
+    environment,
     chartDefaults: {},
     deployments: {},
     externalResources: {
