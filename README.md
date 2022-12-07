@@ -1,8 +1,8 @@
 # konfigure
 
-This tool facilitates deploying workloads to K8s clusters, providing several convenience features streamlining developer workflows and guarding against common failure modes. It is to be used in conjunction with a Helm/CDK8s chart repository and a live application configuration repository (or within a single application repository).
+This tool facilitates deploying workloads to K8s clusters, providing several convenience features streamlining developer workflows and guarding against common failure modes. It is to be used in conjunction with a Helm/CDK8s chart repository and a live application configuration repository, or within a single application repository (see [`dataeng-pipeline`](https://github.com/chainalysis/dataeng-pipeline) for an example).
 
-### Installation
+## Installation
 
 This tool is distributed through Artifactory and can be installed using `npm`.
 
@@ -24,11 +24,11 @@ Once `npm` is configured, run the following command to install the latest versio
 npm install -g @chainalysis/konfigure
 ```
 
-### Usage
+## Usage
 
 The `konfigure` command can be used to `render` charts `deploy` them to a cluster, and to `teardown` afterwords. It is to be run in a directory with a `{k,c}onfig.{json,yaml}` file which sets up an `environment`.
 
-#### Commands
+### Commands
 
 The basic form these commands take is:
 
@@ -49,7 +49,7 @@ with the components being as follows:
 - `target`: which deployments to operate on. if `all`, no limiting. if prepended with `chart`, args will be interpreted as chart names, rather than deployment names.
 
 <!-- commands -->
-# Command Topics
+#### Command Topics
 
 * [`konfigure debugPod`](docs/debugPod.md) - launches a `debugPod` configured with the specified environment
 * [`konfigure deploy`](docs/deploy.md) - render and deploy targeted instances to the current environment
@@ -64,7 +64,7 @@ with the components being as follows:
 
 <!-- commandsstop -->
 
-##### Examples
+#### Examples
 
 This command pushes the `eth-node` deployment to the `dev` environment:
 
@@ -96,15 +96,15 @@ This command uninstalls the `eth-seeder` and `eth-backend` deployments from the 
 konfigure teardown dev eth-seeder eth-backend
 ```
 
-#### Configuration
+### Configuration
 
 Environments are configured within a directory called `env` in the root of a repository; each environment is represented by a subdirectory and contains a configuration file, as well as several subdirectories, each of which maps to a field in the configuration file.
 
-##### Configuration File
+#### Configuration File
 
-The `config.json` file sets up the environment, including the relevant account, region, cluster, namespace, and node group. It also configures each deployment, setting the name, chart, and source.
+The `konfig.json` file sets up the environment, including the relevant account, region, cluster, namespace, and node group. It also configures each deployment, setting the name, chart, and source.
 
-###### Fields
+##### Fields
 
 - `apiVersion`: minimum version of `dataeng-tools` required
 - `environment`: environment configuration
@@ -132,19 +132,19 @@ The `config.json` file sets up the environment, including the relevant account, 
   - `secretPresets`: defines common `externalSecret` combinations which can be referenced in specific `externalResources.deployment`s using `$secretPreset`
   - `deployments`: instances of the `external-service` chart to be deployed, takes only values
 
-###### Secrets Management
+##### Secrets Management
 
 We use the [`external-secrets`](https://github.com/external-secrets/kubernetes-external-secrets) module to poplate K8s `Secret`s from parameters stored in AWS SSM, which allows us to avoid manually shuffling around sensitive values or accidentally committing them to Git. To use this functionality, we create an `ExternalSecret` resource with a map of secret key to SSM parameter path, and then reference the automatically created `Secret` using a `secretEnvMap` block or the equivalent.
 
 Note that the `external-service` chart provides an easy way of setting up these resources by adding an item to the `externalResources.deployments` section, see the example below for details.
 
-###### Subdirectory Mappings
+##### Subdirectory Mappings
 
 - `chartDefaults`: files map to the equivalent config entry's `values` field
 - `deployments`: files map to the equivalent config entry's `values` field
 - `externalResources`: files map to the equivalent config entry's value (in the `deployments` subsection)
 
-###### Overrides & Precedence
+##### Overrides & Precedence
 
 The subdirectories/files are simply a way to extract complex configuration from the main file, and are merged with inline config in this precedence order (higher overrides):
 
@@ -154,7 +154,7 @@ The subdirectories/files are simply a way to extract complex configuration from 
 4. `deployments` (file)
 5. `deployments` (inline)
 
-###### Example
+##### Example
 
 ```json
 {
