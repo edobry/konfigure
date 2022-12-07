@@ -31,7 +31,7 @@ with the components being as follows:
 
 * [`konfigure debugPod`](docs/debugPod.md) - launches a `debugPod` configured with the specified environment
 * [`konfigure deploy`](docs/deploy.md) - render and deploy targeted instances to the current environment
-* [`konfigure edit`](docs/edit.md) - launch k9s in the current environment
+* [`konfigure edit`](docs/edit.md) - open the konfig file for the current environment in your editor
 * [`konfigure getDns`](docs/getDns.md) - query the provisioned DNS name for the given deployment
 * [`konfigure help`](docs/help.md) - Display help for konfigure.
 * [`konfigure k9s`](docs/k9s.md) - launch k9s in the current environment

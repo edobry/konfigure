@@ -1,13 +1,13 @@
 `konfigure edit`
 ================
 
-launch k9s in the current environment
+open the konfig file for the current environment in your editor
 
 * [`konfigure edit ENVIRONMENT`](#konfigure-edit-environment)
 
 ## `konfigure edit ENVIRONMENT`
 
-launch k9s in the current environment
+open the konfig file for the current environment in your editor
 
 ```
 USAGE
@@ -26,7 +26,7 @@ FLAGS
   --testing           skip expensive operations during development
 
 DESCRIPTION
-  launch k9s in the current environment
+  open the konfig file for the current environment in your editor
 ```
 
 _See code: [src/commands/edit.ts](https://github.com/chainalysis/konfigure/blob/v0.0.0/src/commands/edit.ts)_
