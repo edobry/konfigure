@@ -1,7 +1,7 @@
 import BaseCommand, { CommandContext, processDeployments } from "../baseCommand";
 
 export default class RedeployCommand extends BaseCommand<typeof RedeployCommand.flags> {
-    static description = "tear down and redeploy instances to the current environment";
+    static description = "`teardown` and then `deploy` targeted instances to the current environment";
     static strict = false;
 
     static flags = BaseCommand.flags;
