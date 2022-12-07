@@ -1,7 +1,7 @@
 import BaseCommand, { CommandContext, processDeployments } from "../baseCommand";
 
 export default class RenderCommand extends BaseCommand<typeof RenderCommand.flags> {
-    static description = "render instance manifests";
+    static description = "substitutes values and renders manifests for the targeted deployments, printing results";
     static strict = false;
 
     static flags = BaseCommand.flags;

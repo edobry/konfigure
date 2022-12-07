@@ -2,7 +2,7 @@ import { Flags } from "@oclif/core";
 import BaseCommand, { CommandContext, runDtCommand } from "../baseCommand";
 
 export default class DebugPodCommand extends BaseCommand<typeof DebugPodCommand.flags> {
-    static description = "launch k9s in the current environment";
+    static description = "launches a `debugPod` configured with the specified environment";
     static strict = false;
 
     static flags = {
