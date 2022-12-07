@@ -2,6 +2,28 @@
 
 This tool facilitates deploying workloads to K8s clusters, providing several convenience features streamlining developer workflows and guarding against common failure modes. It is to be used in conjunction with a Helm/CDK8s chart repository and a live application configuration repository (or within a single application repository).
 
+### Installation
+
+This tool is distributed through Artifactory and can be installed using `npm`.
+
+First, ensure your `npm` is configured to work with Artifactory. Assuming you already have Docker configured and authenticated, run the following to configure `npm`:
+
+```shell
+nodeRepoConfigureArtifactoryFromDocker
+```
+
+If you do not have Docker configured, you’ll need to locate your Artifactory credentials and pass them in like so:
+
+```shell
+nodeRepoConfigureArtifactory <username> <api token>
+```
+
+Once `npm` is configured, run the following command to install the latest version of `konfigure`:
+
+```shell
+npm install -g @chainalysis/konfigure
+```
+
 ### Usage
 
 The `konfigure` command can be used to `render` charts `deploy` them to a cluster, and to `teardown` afterwords. It is to be run in a directory with a `{k,c}onfig.{json,yaml}` file which sets up an `environment`.
