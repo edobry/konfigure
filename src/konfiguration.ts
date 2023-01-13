@@ -6,7 +6,8 @@ import * as fs from "fs-extra";
 import { CommandInput } from "./baseCommand";
 import { Flags } from "./flags";
 import Logger from "./logger";
-import { pretty, printArgs, readFile, readOptionalFile } from "./util";
+import { pretty, printArgs } from "./util";
+import { FileIO, GlobalFileIO, IFileIO } from "./fileIO";
 
 type DeploymentMap = { [index: string]: Deployment };
 type InstanceMap = { [index: string]: Instance };
@@ -80,7 +81,7 @@ export class Instance {
         return [
             envValues,
             await chartDefaultValuesP,
-            this.konfig.getChartDefaults(this.dep.chart)?.values || {},
+            this.konfig.getChartDefaults(this.chart)?.values || {},
             await deploymentValuesP,
             this.dep.values || {},
         ];
@@ -138,13 +139,14 @@ export class Konfiguration {
             envName,
             baseDir
         );
-        const konfig = await readFile(Konfiguration.getKonfigPath(konfigEnv));
+        const konfig = await GlobalFileIO.readFile(Konfiguration.getKonfigPath(konfigEnv));
 
         // TODO: implement file schema validation
         return new Konfiguration(
             envName,
             konfigEnv,
-            konfig as unknown as KonfigProps
+            konfig as unknown as KonfigProps,
+            GlobalFileIO
         );
     }
 
@@ -237,7 +239,8 @@ export class Konfiguration {
     constructor(
         public name: string,
         public konfigEnv: KonfigEnv,
-        public props: KonfigProps
+        public props: KonfigProps,
+        public fileIO: IFileIO
     ) {
         this.log = new Logger(`Konfiguration:env/${name}`);
         this.instances = {
@@ -250,16 +253,32 @@ export class Konfiguration {
         return Konfiguration.getKonfigPath(this.konfigEnv);
     }
 
+    // eslint-disable-next-line @typescript-eslint/member-ordering
+    static chartDefaultsValuesPath(envDir: string, chart: string) {
+        return path.join(envDir, `chartDefaults/${chart}.yaml`);
+    }
+
+    chartDefaultsValuesPath(chart: string) {
+        return Konfiguration.chartDefaultsValuesPath(this.konfigEnv.dir, chart);
+    }
+
+    // eslint-disable-next-line @typescript-eslint/member-ordering
+    static deploymentsValuesPath(envDir: string, deployment: string) {
+        return path.join(envDir, `deployments/${deployment}.yaml`);
+    }
+
+    deploymentsValuesPath(deployment: string) {
+        return Konfiguration.deploymentsValuesPath(this.konfigEnv.dir, deployment);
+    }
+
     async readChartDefaultValues(chart: string) {
-        return readOptionalFile(
-            path.join(this.konfigEnv.dir, `chartDefaults/${chart}.yaml`)
-        );
+        return this.fileIO.readOptionalFile(
+            this.chartDefaultsValuesPath(chart));
     }
 
     async readDeploymentValues(deployment: string) {
-        return readOptionalFile(
-            path.join(this.konfigEnv.dir, `deployments/${deployment}.yaml`)
-        );
+        return this.fileIO.readOptionalFile(
+            this.deploymentsValuesPath(deployment));
     }
 
     // TODO: implement?
