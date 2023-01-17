@@ -147,7 +147,18 @@ test("Instance.prepareValues: external chart defaults used for local chart sourc
 });
 
 test("Instance.prepareValues: env values nested", async () => {
-    // TODO: implement
+    const envValues = { [testKeyName]: "testValue" };
+
+    expect(
+        await makeTestKonfig({
+            konfigMappers: [
+                addDeployment(1, {
+                    chart: chart(1),
+                    nestValues: true,
+                }),
+            ],
+        }).instances[dep(1)].prepareValues(envValues)
+    ).toContain({ [dep(1)]: envValues });
 });
 
 test("filterDeployments: matches all", () => {
