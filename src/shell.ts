@@ -1,7 +1,7 @@
 import { ChildProcess, ChildProcessByStdio, CommonOptions, spawn, SpawnOptions, SpawnOptionsWithoutStdio } from "child_process";
 import internal = require("stream");
+import { GlobalFileIO } from "./fileIo";
 import Logger from "./logger";
-import { readOptionalFile } from "./util";
 
 // adapted from https://github.com/joshuatz/nodejs-child-process-testing/blob/main/persistent-shell.js
 
@@ -223,7 +223,7 @@ async function findDtInitScript(): Promise<string> {
     const configDir = process.env.XDG_CONFIG_HOME || `${process.env.HOME || "~/"}/.config`;
     const dtConfigFile = `${configDir}/dataeng-tools/config.json`;
 
-    const dtConfig = await readOptionalFile(dtConfigFile);
+    const dtConfig = await GlobalFileIO.readOptionalFile(dtConfigFile);
     logger.debugYaml(dtConfig);
     const projectDir = dtConfig.projectDir;
 

@@ -1,10 +1,7 @@
-import { CoreV1Api, V1Namespace } from "@kubernetes/client-node";
 import { IncomingMessage } from "http";
-import { CommandContext } from "../src/baseCommand";
-import { K8sNamespaceApi } from "../src/commandContext";
-import { processDeployments } from "../src/common";
-import { Deployment, Konfiguration } from "../src/konfiguration";
-import { addDeployment, chart, dummyCommand, helmClient, input, makeCtx, makeKonfig, testEnvConfig, testEnvDev, testEnvName, testKonfigEnv } from "./testUtil";
+import { V1Namespace } from "@kubernetes/client-node";
+import { Deployment } from "../src/konfiguration";
+import { chart, dummyCommand, input, makeCtx, makeKonfig, testEnvDev } from "./testUtil";
 
 const localChart: Deployment = {
     chart: `/local/path/to/${chart(1)}`,

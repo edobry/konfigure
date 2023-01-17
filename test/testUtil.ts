@@ -2,7 +2,7 @@ import merge from "deepmerge";
 import { files } from "node-dir";
 import { CommandInput } from "../src/baseCommand";
 import { CommandContext } from "../src/commandContext";
-import { IFileIO } from "../src/fileIO";
+import { IFileIO } from "../src/fileIo";
 import { Flags } from "../src/flags";
 import { Deployment, Environment, ExternalResource, ExternalServiceChart, KonfigEnv, KonfigProps, Konfiguration, ValuesMap } from "../src/konfiguration";
 import Logger from "../src/logger";
@@ -55,23 +55,23 @@ export const makeKonfig = (...konfigMappers: Mapper<KonfigProps>[]) =>
 
 export const makeTestKonfig = (params: {
     konfigMappers: Mapper<KonfigProps>[];
-    mockFileIO?: IFileIO;
+    mockFileIO?: (envDir: string) => Record<string, ValuesMap>;
 }) =>
     new Konfiguration(
         testEnvName,
         testKonfigEnv,
         params.konfigMappers.reduce((acc, map) => map(acc), testEnvConfig()),
-        params.mockFileIO ? params.mockFileIO(testKonfigEnv.dir) :
-            makeMockFileIO((x) => ({}))
+        params.mockFileIO ? makeMockFileIO(params.mockFileIO(testKonfigEnv.dir)) :
+            makeMockFileIO({})
     );
 
 // TODO: untangle this mess
-export const makeMockFileIO: (mapper: (envDir: string) => Record<string, ValuesMap>) => IFileIO = (mapper) => (envDir: string) => {
-    return mapper(envDir)
-    {
-    readOptionalFile: jest.fn(async path => files[path] || {}),
-    readFile: jest.fn(async path => files[path]),
-});
+export const makeMockFileIO: (values: Record<string, ValuesMap>) => IFileIO = values => {
+    return {
+        readOptionalFile: jest.fn(async path => values[path] || {}),
+        readFile: jest.fn(async path => values[path]),
+    };
+};
 
 export const shell = {
     runCommand: jest.fn(async () => ({ exitcode: 0, output: "" })),

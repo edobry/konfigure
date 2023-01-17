@@ -4,10 +4,10 @@ import { codeBlock } from "common-tags";
 
 import * as fs from "fs-extra";
 import { CommandInput } from "./baseCommand";
+import { GlobalFileIO, IFileIO } from "./fileIo";
 import { Flags } from "./flags";
 import Logger from "./logger";
 import { pretty, printArgs } from "./util";
-import { FileIO, GlobalFileIO, IFileIO } from "./fileIO";
 
 type DeploymentMap = { [index: string]: Deployment };
 type InstanceMap = { [index: string]: Instance };
