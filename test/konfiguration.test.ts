@@ -158,7 +158,7 @@ test("Instance.prepareValues: env values nested", async () => {
                 }),
             ],
         }).instances[dep(1)].prepareValues(envValues)
-    ).toContain({ [dep(1)]: envValues });
+    ).toContainEqual({ [dep(1)]: envValues });
 });
 
 test("filterDeployments: matches all", () => {
