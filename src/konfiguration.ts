@@ -64,7 +64,7 @@ export class Instance {
 
     async prepareValues(envValues: ValuesMap, chartDefaultValues?: ValuesMap, deploymentValues?: ValuesMap): Promise<ValuesMap[]> {
         const chartDefaultValuesP = chartDefaultValues
-            ?? this.konfig.readChartDefaultValues(this.dep.chart);
+            ?? this.konfig.readChartDefaultValues(this.chart);
         const deploymentValuesP = deploymentValues
             ?? this.konfig.readDeploymentValues(this.name);
 
