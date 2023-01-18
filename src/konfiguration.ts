@@ -79,7 +79,7 @@ export class Instance {
         // deployment (inline)
 
         return [
-            this.dep.nestValues ? { [this.name]: envValues } : envValues,
+            this.dep.nestValues ? { [this.chart]: envValues } : envValues,
             await chartDefaultValuesP,
             this.konfig.getChartDefaults(this.chart)?.values || {},
             await deploymentValuesP,
