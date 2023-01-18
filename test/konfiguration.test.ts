@@ -1,5 +1,5 @@
 import { ExternalServiceChart, Konfiguration } from "../src/konfiguration";
-import { input, overriddenValues, testEnvConfig, testKonfigEnv, testEnvName, testKeyName, dummyCommand, makeKonfig, dep, chart, addDeployment, secretPreset, addSecretPreset, addExternalResource, externalResource, addChart, addExternalServiceChart } from "./testUtil";
+import { input, overriddenValues, testEnvConfig, testKonfigEnv, testEnvName, testKeyName, dummyCommand, makeKonfig, dep, chart, addDeployment, secretPreset, addSecretPreset, addExternalResource, externalResource, addChart, addExternalServiceChart, makeTestKonfig, makeMockFileIO } from "./testUtil";
 
 const x = {
     [dep(1)]: {
@@ -19,7 +19,7 @@ const x = {
 };
 
 test("parses konfig", () => {
-    expect(new Konfiguration(testEnvName, testKonfigEnv, testEnvConfig())).toBeInstanceOf(Konfiguration);
+    expect(new Konfiguration(testEnvName, testKonfigEnv, testEnvConfig(), makeMockFileIO({}))).toBeInstanceOf(Konfiguration);
 });
 
 test("parseInstances: handles local chart path", () => {
@@ -123,6 +123,42 @@ test("Instance.prepareValues: inline chart default values override external char
             })
         ).instances[dep(1)].prepareValues({}, overriddenValues)
     ).toContain(chartInlineValues);
+});
+
+test("Instance.prepareValues: external chart defaults used for local chart source", async () => {
+    const chartDefaultValues = { [testKeyName]: "testValue" };
+
+    expect(
+        await makeTestKonfig({
+            konfigMappers: [
+                addChart(1, {
+                    chart: chart(1),
+                }),
+                addDeployment(1, {
+                    chart: `/local/path/${chart(1)}`,
+                    source: "local",
+                }),
+            ],
+            mockFileIO: envDir => ({
+                [Konfiguration.chartDefaultsValuesPath(envDir, chart(1))]: chartDefaultValues
+            }),
+        }).instances[dep(1)].prepareValues({})
+    ).toContain(chartDefaultValues);
+});
+
+test("Instance.prepareValues: env values nested", async () => {
+    const envValues = { [testKeyName]: "testValue" };
+
+    expect(
+        await makeTestKonfig({
+            konfigMappers: [
+                addDeployment(1, {
+                    chart: chart(1),
+                    nestValues: true,
+                }),
+            ],
+        }).instances[dep(1)].prepareValues(envValues)
+    ).toContainEqual({ [chart(1)]: envValues });
 });
 
 test("filterDeployments: matches all", () => {

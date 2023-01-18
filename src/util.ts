@@ -1,4 +1,3 @@
-import * as path from "path";
 import chalk from "chalk";
 import highlight, { Theme } from "cli-highlight";
 
@@ -6,10 +5,7 @@ import {
     TemplateTag, inlineArrayTransformer, splitStringTransformer,
     stripIndentTransformer, trimResultTransformer
 } from "common-tags";
-import * as fs from "fs-extra";
 import * as yaml from "js-yaml";
-import { ValuesMap } from "./konfiguration";
-import Logger from "./logger";
 
 export const pretty = new TemplateTag(
     stripIndentTransformer("initial"),
@@ -66,34 +62,6 @@ function printArgsInternal(args: [string, KonfigValue][]) {
 }
 export function printArgs(args: { [index: string]: KonfigValue }) {
     return printArgsInternal(Object.entries(args));
-}
-
-export async function readOptionalFile(filePath: string): Promise<ValuesMap> {
-    try {
-        return await readFile(filePath);
-    } catch (e) {
-        return {};
-    }
-}
-
-export async function readFile(filePath: string): Promise<ValuesMap> {
-    const fileContents = await fs.readFile(filePath, { encoding: "UTF-8" });
-
-    switch (path.extname(filePath)) {
-        case ".json": {
-            try {
-                return JSON.parse(fileContents);
-            } catch (e) {
-                Logger.root.error(`Unable to parse JSON file ${filePath}`);
-                throw e;
-            }
-        }
-        case ".yaml":
-            return yaml.load(fileContents) as ValuesMap;
-        default:
-            throw new Error(
-                `Invalid filepath '${filePath}' provided for values file; extension must be .yaml or .json!`);
-    }
 }
 
 const offwhite = chalk.hex("#e0e2e4");
