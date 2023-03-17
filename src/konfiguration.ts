@@ -157,28 +157,32 @@ export class Konfiguration {
         const dir = baseDir ?? process.cwd();
         const envDir = path.join(dir, `env/${envName}`);
 
-        try {
-            const filename = "konfig.json";
-            await fs.access(path.join(envDir, filename), fs.constants.R_OK);
-            return { filename, dir: envDir };
-        } catch (e) {
+        const names = [
+            "konfig.yaml",
+            "config.yaml",
+            "konfig.json",
+            "config.json",
+        ];
+
+        let err;
+        for(let i in names)
             try {
-                const filename = "config.json";
+                const filename = names[i];
                 await fs.access(path.join(envDir, filename), fs.constants.R_OK);
                 return { filename, dir: envDir };
-            } catch (e2) {
-                const { code } = e2 as Error & { code: "ENOENT" };
+            } catch (e) {
+                const { code } = e as Error & { code: "ENOENT" };
 
                 if(code == "ENOENT")
-                    Logger.root.error(
-                        `No konfiguration file found for the ${envName} environment!`
-                    );
-                else
-                    Logger.root.error(e2 as string);
+                    continue;
 
-                process.exit(1);
+                err = e;
             }
-        }
+
+        Logger.root.error(`No konfiguration file found for the ${envName} environment!`);
+        Logger.root.error(err as string);
+
+        process.exit(1);
     }
 
     static parseInstances(konfig: Konfiguration): InstanceMap {
