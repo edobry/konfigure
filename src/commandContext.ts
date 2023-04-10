@@ -45,8 +45,7 @@ export class CommandContext<T extends Flags> {
 
     initK8sApi(): K8sNamespaceApi {
         const kc = new k8s.KubeConfig();
-        // TODO: use envvar
-        kc.loadFromFile(`${process.env.CA_DT_DIR}/shell/eksconfig.yaml`);
+        kc.loadFromDefault();
 
         let k8sApi: k8s.CoreV1Api;
         try {
