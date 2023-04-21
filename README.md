@@ -26,7 +26,7 @@ npm install -g @chainalysis/konfigure
 
 ## Usage
 
-The `konfigure` command can be used to `render` charts `deploy` them to a cluster, and to `teardown` afterwords. It is to be run in a directory with a `{k,c}onfig.{json,yaml}` file which sets up an `environment`.
+The `konfigure` command can be used to `render` charts `deploy` them to a cluster, and to `teardown` afterwords. It is to be run in a directory with a `konfig.yaml` file which sets up an `environment`.
 
 ### Commands
 
@@ -102,7 +102,9 @@ Environments are configured within a directory called `env` in the root of a rep
 
 #### Configuration File
 
-The `konfig.json` file sets up the environment, including the relevant account, region, cluster, namespace, and node group. It also configures each deployment, setting the name, chart, and source.
+The `konfig.yaml` file sets up the environment, including the relevant account, region, cluster, namespace, and node group. It also configures each deployment, setting the name, chart, and source.
+
+For backwards-compatibility reasons `konfigure` will recognize any file matching `{k,c}onfig.{yaml,json}`, but only `konfig.yaml` will be used moving forward.
 
 ##### Fields
 
@@ -156,85 +158,63 @@ The subdirectories/files are simply a way to extract complex configuration from 
 
 ##### Example
 
-```json
-{
-    "apiVersion": "4.13.0",
-    "environment": {
-        "tfEnv": "dataeng-dev",
-        "tfModule": "legacy-dev",
-        "awsAccount": "dataeng-dev",
-        "awsRegion": "eu-west-1",
-        "k8sContext": "dataeng-nonprod",
-        "k8sNamespace": "coin-collection-dev",
-        "eksNodegroup": "coin-collection-eu-west-1a-workers"
-    },
-    "chartDefaults": {
-        "external-service": {
-            "version": "0.1.0"
-        },
-        "ethereum": {
-            "version": "1.3.3"
-        },
-        "ib-backend": {
-            "version": "0.5.4",
-            "values": {
-                "cluster": {
-                    "version": "6.47.0"
-                }
-            }
-        },
-    },
-    "deployments": {
-        "eth-node": {
-            "chart": "ethereum"
-        },
-        "eth2-node": {
-            "chart": "ethereum"
-        },
-        "eth-backend": {
-            "chart": "ib-backend"
-        },
-        "eth-seeder": {
-            "chart": "~/Developer/chainalysis/dataeng-charts/charts/ib-seeder",
-            "source": "local"
-        },
-        "eth-producer": {
-            "chart": "tx-producer",
-            "version": "0.5.4"
-        },
-        "some-other-app-instance": {
-            "chart": "some-other-app",
-            "type": "cdk8s",
-            "version": "1.2.3"
-        }
-    },
-    "externalResources": {
-        "secretPresets": {
-            "preset-1": {
-                "username": "/dataeng-dev/some-param/username",
-                "password": "/dataeng-dev/some-param/password"
-            }
-        },
-        "deployments": {
-            "bison-eos": {
-                "externalName": "[...].eos.bison.run",
-                "externalSecrets": {
-                    "username": "/dataeng-dev/bison-eos/username",
-                    "password": "/dataeng-dev/bison-eos/password"
-                }
-            },
-            "postgres-cascade": {
-                "externalIP": "10.0.0.18",
-                "externalPort": 5432
-            },
-            "postgres-eth": {
-                "externalName": "dataeng-dev-coin-collection-eth.[...].rds.amazonaws.com",
-                "$secretPreset": "preset-1"
-            },
-            "tx-producer-kafka-1": {
-                "externalName": "b-1.kafka-nonprod-tx-produ.[...].amazonaws.com"
-            }
-        }
-    }
-}
+```yaml
+apiVersion: 4.13.0
+environment:
+  tfEnv: dataeng-dev
+  tfModule: legacy-dev
+  awsAccount: dataeng-dev
+  awsRegion: eu-west-1
+  k8sContext: di-nonprod
+  k8sNamespace: coin-collection-dev
+  eksNodegroup: coin-collection-eu-west-1a-workers
+
+chartDefaults:
+  external-service:
+    version: 0.1.0
+  ethereum:
+    version: 1.3.3
+  ib-backend:
+    version: 0.5.4
+    values:
+      cluster:
+        version: 6.47.0
+
+deployments:
+  eth-node:
+    chart: ethereum
+  eth2-node:
+    chart: ethereum
+  eth-backend:
+    chart: ib-backend
+  eth-seeder:
+    chart: ~/Developer/chainalysis/dataeng-charts/charts/ib-seeder
+    source: local
+  eth-producer:
+    chart: tx-producer
+    version: 0.5.4
+  some-other-app-instance:
+    chart: some-other-app
+    type: cdk8s
+    version: 1.2.3
+
+externalResources:
+  secretPresets:
+    preset-1:
+      username: /dataeng-dev/some-param/username
+      password: /dataeng-dev/some-param/password
+  deployments:
+    bison-eos:
+      externalName: '[...].eos.bison.run'
+      externalSecrets:
+        username: /dataeng-dev/bison-eos/username
+        password: /dataeng-dev/bison-eos/password
+    postgres-cascade:
+      externalIP: 10.0.0.18
+      externalPort: 5432
+    postgres-eth:
+      externalName: dataeng-dev-coin-collection-eth.[...].rds.amazonaws.com
+      $secretPreset: preset-1
+    tx-producer-kafka-1:
+      externalName: b-1.kafka-nonprod-tx-produ.[...].amazonaws.com
 ```
