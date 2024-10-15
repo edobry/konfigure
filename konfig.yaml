@@ -1,0 +1,58 @@
+apiVersion: 4.13.0
+environment:
+  tfEnv: dev
+  tfModule: legacy-dev
+  awsAccount: dev
+  awsRegion: eu-east-1
+  k8sContext: nonprod
+  k8sNamespace: dev
+  eksNodegroup: eu-east-1a-workers
+
+chartDefaults:
+  external-service:
+    version: 0.1.0
+  ethereum:
+    version: 1.3.3
+  backend:
+    version: 0.5.4
+    values:
+      cluster:
+        version: 6.47.0
+
+deployments:
+  eth-node:
+    chart: ethereum
+  eth2-node:
+    chart: ethereum
+  eth-backend:
+    chart: backend
+  eth-seeder:
+    chart: ~/Developer/Projects/charts/charts/seeder
+    source: local
+  eth-producer:
+    chart: producer
+    version: 0.5.4
+  some-other-app-instance:
+    chart: some-other-app
+    type: cdk8s
+    version: 1.2.3
+
+externalResources:
+  secretPresets:
+    preset-1:
+      username: /dev/some-param/username
+      password: /dev/some-param/password
+  deployments:
+    alchemy-eth:
+      externalName: '[...].alchemy.com'
+      externalSecrets:
+        username: /dev/alchemy-eth/username
+        password: /dev/alchemy-eth/password
+    postgres-local:
+      externalIP: 10.0.0.18
+      externalPort: 5432
+    postgres-eth:
+      externalName: dev-eth.[...].rds.amazonaws.com
+      $secretPreset: preset-1
+    producer-kafka-1:
+      externalName: b-1.kafka-nonprod-producer.[...].amazonaws.com

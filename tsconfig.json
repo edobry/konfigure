@@ -1,0 +1,14 @@
+{
+  "compilerOptions": {
+    "declaration": true,
+    "importHelpers": true,
+    "module": "commonjs",
+    "outDir": "lib",
+    "rootDir": "src",
+    "strict": true,
+    "lib": ["ES2020", "ESNext"],
+    "target": "es2020",
+    "esModuleInterop": true,
+  },
+  "include": ["src/**/*.ts", "src/**/*.js"],
+}
