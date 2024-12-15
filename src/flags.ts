@@ -1,7 +1,6 @@
 import { Args, Flags } from "@oclif/core";
 import { Flag } from "@oclif/core/lib/interfaces";
 import { Arg } from "@oclif/core/lib/interfaces/parser";
-// import { flags as parserFlags } from "@oclif/core";
 
 export const help = Flags.help({ char: "h" });
 

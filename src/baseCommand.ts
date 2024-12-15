@@ -1,5 +1,4 @@
-// import { Command, Config, Input, OutputArgs, OutputFlags } from "@oclif/core";
-import { Command, Config, Interfaces } from "@oclif/core";
+import { Command, Config } from "@oclif/core";
 import { Input, OutputArgs, OutputFlags } from "@oclif/core/lib/interfaces/parser";
 import { CommandContext } from "./commandContext";
 import { Flags, Args, commonFlags, commonArgs } from "./flags";
