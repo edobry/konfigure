@@ -29,7 +29,7 @@
         "typescript": "^4.4.4"
     },
     "engines": {
-        "node": ">=8.0.0"
+        "node": ">=23.0.0"
     },
     "files": [
         "/bin",
