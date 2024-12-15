@@ -1,5 +1,5 @@
 import chalk from "chalk";
-import highlight, { Theme } from "cli-highlight";
+import { highlight, Theme } from "cli-highlight";
 
 import {
     TemplateTag, inlineArrayTransformer, splitStringTransformer,

@@ -3,11 +3,11 @@ import * as path from "path";
 import { codeBlock } from "common-tags";
 
 import * as fs from "fs-extra";
-import { CommandInput } from "./baseCommand";
-import { GlobalFileIO, IFileIO } from "./fileIo";
-import { Args, Flags } from "./flags";
-import Logger from "./logger";
-import { pretty, printArgs } from "./util";
+import { CommandInput } from "./baseCommand.ts";
+import { GlobalFileIO, IFileIO } from "./fileIo.ts";
+import { Args, Flags } from "./flags.ts";
+import Logger from "./logger.ts";
+import { pretty, printArgs } from "./util.ts";
 
 type DeploymentMap = { [index: string]: Deployment };
 type InstanceMap = { [index: string]: Instance };

@@ -2,8 +2,8 @@ import * as path from "path";
 import * as fs from "fs-extra";
 import * as yaml from "js-yaml";
 
-import { ValuesMap } from "./konfiguration";
-import Logger from "./logger";
+import { ValuesMap } from "./konfiguration.ts";
+import Logger from "./logger.ts";
 
 export interface IFileIO {
     readOptionalFile(filePath: string): Promise<ValuesMap>;
@@ -22,7 +22,7 @@ export class FileIO implements IFileIO {
     }
 
     async readFile(filePath: string): Promise<ValuesMap> {
-        const fileContents = await fs.readFile(filePath, { encoding: "UTF-8" });
+        const fileContents = await fs.readFile(filePath, "utf8");
 
         switch (path.extname(filePath)) {
             case ".json": {

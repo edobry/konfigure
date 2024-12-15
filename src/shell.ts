@@ -1,7 +1,7 @@
 import { ChildProcess, ChildProcessByStdio, CommonOptions, spawn, SpawnOptions, SpawnOptionsWithoutStdio } from "child_process";
-import internal = require("stream");
-import { GlobalFileIO } from "./fileIo";
-import Logger from "./logger";
+import internal from "stream";
+import { GlobalFileIO } from "./fileIo.ts";
+import Logger from "./logger.ts";
 
 // adapted from https://github.com/joshuatz/nodejs-child-process-testing/blob/main/persistent-shell.js
 

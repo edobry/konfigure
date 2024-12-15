@@ -1,4 +1,4 @@
-import BaseCommand, { CommandContext, processDeployments, runChiCommand } from "../baseCommand";
+import BaseCommand, { CommandContext, runChiCommand } from "../baseCommand.ts";
 
 export default class GetDnsCommand extends BaseCommand<
     typeof GetDnsCommand.flags,

@@ -1,4 +1,4 @@
-import BaseCommand, { processDeployments, CommandContext } from "../baseCommand";
+import BaseCommand, { processDeployments, CommandContext } from "../baseCommand.ts";
 
 export default class DeployCommand extends BaseCommand<
     typeof DeployCommand.flags,

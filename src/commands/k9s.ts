@@ -1,4 +1,4 @@
-import BaseCommand, { CommandContext, runChiCommand } from "../baseCommand";
+import BaseCommand, { CommandContext, runChiCommand } from "../baseCommand.ts";
 
 export default class K9sCommand extends BaseCommand<
     typeof K9sCommand.flags,

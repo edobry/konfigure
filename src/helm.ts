@@ -156,21 +156,21 @@ export class HelmChart<F extends Flags, A extends Args> {
         const valueFiles = await Promise.all([
             ...values
                 .filter((x) => Object.keys(x).length !== 0)
-                .map(this.writeValueFile.bind(this)),
+                .map(this.writeValueFile.bind(this) as (x: object) => Promise<string>),
         ]);
 
         return valueFiles.map((x) => ["-f", x]).flat();
     }
 
     async writeValueFile(values: object) {
-        const { fd, path, cleanup } = await tmp.file({
+        const { fd, path } = await tmp.file({
             template: "tmp-XXXXXX.json",
         });
 
         this.log.debug(`Writing values file ${path}...`);
         this.log.debugYaml(values);
 
-        const { bytesWritten, buffer } = await fs.write(
+        const { } = await fs.write(
             fd,
             Buffer.from(JSON.stringify(values))
         );

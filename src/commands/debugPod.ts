@@ -17,7 +17,7 @@ export default class DebugPodCommand extends BaseCommand<typeof DebugPodCommand.
         const { env: { konfig: { environment: { awsRegion } } }, input } = ctx;
         await ctx.handleAuth();
 
-        const args = [];
+        const args: string[] = [];
         if(input.flags.serviceAccount)
             args.push("--serviceAccount", input.flags.serviceAccount);
 

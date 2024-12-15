@@ -1,4 +1,4 @@
-import BaseCommand, { CommandContext, runCommand } from "../baseCommand";
+import BaseCommand, { CommandContext, runCommand } from "../baseCommand.ts";
 
 export default class EditCommand extends BaseCommand<
     typeof EditCommand.flags,

@@ -3,7 +3,7 @@ import { files } from "node-dir";
 import { CommandInput } from "../src/baseCommand";
 import { CommandContext } from "../src/commandContext";
 import { IFileIO } from "../src/fileIo";
-import { Flags } from "../src/flags";
+import { Flags, Args } from "../src/flags";
 import { Deployment, Environment, ExternalResource, ExternalServiceChart, KonfigEnv, KonfigProps, Konfiguration, ValuesMap } from "../src/konfiguration";
 import Logger from "../src/logger";
 import { InteractiveShell } from "../src/shell";
@@ -11,7 +11,7 @@ import { deepSet } from "../src/util";
 
 Logger.setGlobalLevel("error");
 
-export const input = (flags: ValuesMap, ...argv: string[]): CommandInput<Flags> => ({
+export const input = (flags: ValuesMap, ...argv: string[]): CommandInput<Flags, Args> => ({
     flags,
     argv,
     args: [],
@@ -82,7 +82,7 @@ export const helmClient = {
 };
 
 export const dummyCommand = "a-command";
-export const makeCtx = <T extends Flags>(cmdInput?: CommandInput<T>, konfig?: Konfiguration) =>
+export const makeCtx = <F extends Flags, A extends Args>(cmdInput?: CommandInput<F, A>, konfig?: Konfiguration) =>
     new CommandContext(Logger.root, cmdInput ?? input({}), {
         shell: shell as unknown as InteractiveShell,
         konfig: konfig || ({} as Konfiguration),
