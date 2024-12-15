@@ -29,7 +29,7 @@ export default class Logger {
                       level: logLevel,
                       ...(!process.env.JEST_WORKER_ID ? {
                         transport: {
-                            target: "../lib/pinoPretty.js",
+                            target: "./pinoPretty.ts",
                             options: {
                                 level: logLevel,
                             }
