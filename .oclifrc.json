@@ -1,6 +1,6 @@
 {
     "bin": "konfigure",
-    "commands": "./lib/commands",
+    "commands": "./src/commands",
     "plugins": ["@oclif/plugin-help", "@oclif/plugin-version"],
     "topicSeparator": " ",
     "additionalHelpFlags": ["-h"],

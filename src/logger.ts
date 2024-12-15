@@ -1,4 +1,4 @@
-import { pino } from "pino";
+import { LoggerOptions, pino } from "pino";
 import { prettyPrintJson, prettyPrintYaml } from "./util.ts";
 
 type Level = "fatal" | "error" | "warn" | "info" | "debug" | "trace";
@@ -19,23 +19,39 @@ export default class Logger {
 
     protected logger: pino.Logger;
 
+    static makePino(logLevel: Level) {
+        const pinoConfig: LoggerOptions = {
+            name: "root",
+            level: logLevel,
+        };
+
+        if (!process.env.JEST_WORKER_ID) {
+            pinoConfig.transport = {
+                target: "pino-pretty",
+                level: logLevel,
+                options: {
+                    levelFirst: true,
+                    crlf: true,
+                    colorize: false,
+                    // singleLine: true,
+                    hideObject: true,
+                    messageKey: "0",
+                    ignore: `time,level,pid,hostname${
+                        logLevel == "info" ? ",name" : ""
+                    }`,
+                },
+            };
+        }
+
+        return pino(pinoConfig);
+    }
+
     constructor(name: string, parent?: Logger) {
-        const logLevel = process.env.KONFIG_LOG ?? "info";
+        const logLevel = (process.env.KONFIG_LOG ?? "info") as Level;
 
         this.logger =
             name == "root"
-                ? pino({
-                      name: name,
-                      level: logLevel,
-                      ...(!process.env.JEST_WORKER_ID ? {
-                        transport: {
-                            target: "./pinoPretty.ts",
-                            options: {
-                                level: logLevel,
-                            }
-                        }
-                    } : {}),
-                  })
+                ? Logger.makePino(logLevel)
                 : (parent || Logger.root).logger.child({ name });
 
         Logger.loggers[name] = this;
