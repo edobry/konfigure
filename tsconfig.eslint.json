@@ -6,9 +6,9 @@
     "inlineSourceMap": true,
     "inlineSources": true,
     "lib": [
-      "es2018"
+      "ES2020"
     ],
-    "module": "CommonJS",
+    "module": "Node16",
     "noEmitOnError": false,
     "noFallthroughCasesInSwitch": true,
     "noImplicitAny": true,
@@ -21,7 +21,7 @@
     "strictNullChecks": true,
     "strictPropertyInitialization": true,
     "stripInternal": true,
-    "target": "ES2018"
+    "target": "ES2020"
   },
   "include": [
     ".projenrc.js",

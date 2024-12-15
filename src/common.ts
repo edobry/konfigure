@@ -1,7 +1,12 @@
-import { CommandContext } from "./commandContext";
-import { Args, Flags } from "./flags";
-import { HelmChart, HelmClient, helmClient as rootHelmClient, IHelmClient } from "./helm";
-import Logger from "./logger";
+import { CommandContext } from "./commandContext.ts";
+import { Args, Flags } from "./flags.ts";
+import {
+    HelmChart,
+    HelmClient,
+    helmClient as rootHelmClient,
+    IHelmClient,
+} from "./helm.ts";
+import Logger from "./logger.ts";
 
 export async function processDeployments<F extends Flags, A extends Args>(
     ctx: CommandContext<F, A>,

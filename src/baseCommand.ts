@@ -1,12 +1,12 @@
 import { Command, Config } from "@oclif/core";
-import { Input, OutputArgs, OutputFlags } from "@oclif/core/lib/interfaces/parser";
-import { CommandContext } from "./commandContext";
-import { Flags, Args, commonFlags, commonArgs } from "./flags";
-import Logger from "./logger";
+import { Input, OutputArgs, OutputFlags } from "@oclif/core/parser";
+import { CommandContext } from "./commandContext.ts";
+import { Flags, Args, commonFlags, commonArgs } from "./flags.ts";
+import Logger from "./logger.ts";
 
-export { processDeployments } from "./common";
-export { runCommand, runChiCommand } from "./shell";
-export { CommandContext } from "./commandContext";
+export { processDeployments } from "./common.ts";
+export { runCommand, runChiCommand } from "./shell.ts";
+export { CommandContext } from "./commandContext.ts";
 
 export type CommandFlags<F extends Flags> = {
     flags: OutputFlags<F>;

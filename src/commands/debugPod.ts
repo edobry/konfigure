@@ -1,46 +1,30 @@
 import { Flags } from "@oclif/core";
-import BaseCommand, { CommandContext, runChiCommand } from "../baseCommand";
+import BaseCommand, { CommandContext, runChiCommand } from "../baseCommand.ts";
 
-export default class DebugPodCommand extends BaseCommand<
-    typeof DebugPodCommand.flags,
-    typeof DebugPodCommand.args
-> {
-    static description =
-        "launches a `debugPod` configured with the specified environment";
+export default class DebugPodCommand extends BaseCommand<typeof DebugPodCommand.flags, typeof DebugPodCommand.args> {
+    static description = "launches a `debugPod` configured with the specified environment";
     static strict = false;
 
     static flags = {
         ...BaseCommand.flags,
         serviceAccount: Flags.string({
-            description: "which service account to run as",
-        }),
+            description: "which service account to run as"
+        })
     };
     static args = BaseCommand.args;
 
-    async command(
-        ctx: CommandContext<
-            typeof DebugPodCommand.flags,
-            typeof DebugPodCommand.args
-        >
-    ) {
-        const {
-            env: {
-                konfig: {
-                    environment: { awsRegion },
-                },
-            },
-            input,
-        } = ctx;
+    async command(ctx: CommandContext<typeof DebugPodCommand.flags, typeof DebugPodCommand.args>) {
+        const { env: { konfig: { environment: { awsRegion } } }, input } = ctx;
         await ctx.handleAuth();
 
         const args = [];
-        if (input.flags.serviceAccount)
+        if(input.flags.serviceAccount)
             args.push("--serviceAccount", input.flags.serviceAccount);
 
-        const debugPodCommand = `k8sDebugPod --az ${awsRegion}a ${args.join(
-            " "
-        )}`;
-        if (input.flags.dryrun) this.logger.info(debugPodCommand);
-        else await runChiCommand(debugPodCommand);
+        const debugPodCommand = `k8sDebugPod --az ${awsRegion}a ${args.join(" ")}`;
+        if(input.flags.dryrun)
+            this.logger.info(debugPodCommand);
+        else
+            await runChiCommand(debugPodCommand);
     }
 };

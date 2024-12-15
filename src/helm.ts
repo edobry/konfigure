@@ -2,13 +2,13 @@ import { basename } from "path";
 import * as fs from "fs-extra";
 import * as dir from "node-dir";
 import * as tmp from "tmp-promise";
-import { CommandContext } from "./commandContext";
-import { Args, Flags } from "./flags";
-import { Deployment, Instance, ValuesMap } from "./konfiguration";
+import { CommandContext } from "./commandContext.ts";
+import { Args, Flags } from "./flags.ts";
+import { Deployment, Instance, ValuesMap } from "./konfiguration.ts";
 
-import Logger from "./logger";
-import { ShellCommandRunner } from "./shell";
-import { fromEntries } from "./util";
+import Logger from "./logger.ts";
+import { ShellCommandRunner } from "./shell.ts";
+import { fromEntries } from "./util.ts";
 
 export interface IHelmClient {
     runHelmCommand: HelmClient["runHelmCommand"];

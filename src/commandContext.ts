@@ -1,10 +1,10 @@
 import * as k8s from "@kubernetes/client-node";
 
-import { CommandInput } from "./baseCommand";
-import { Args, Flags } from "./flags";
-import { Konfiguration } from "./konfiguration";
-import Logger from "./logger";
-import { initChiShell, InteractiveShell } from "./shell";
+import { CommandInput } from "./baseCommand.ts";
+import { Args, Flags } from "./flags.ts";
+import { Konfiguration } from "./konfiguration.ts";
+import Logger from "./logger.ts";
+import { initChiShell, InteractiveShell } from "./shell.ts";
 
 export type Environment = {
     konfig: Konfiguration;

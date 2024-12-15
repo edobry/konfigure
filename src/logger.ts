@@ -1,5 +1,5 @@
-import pino from "pino";
-import { prettyPrintJson, prettyPrintYaml } from "./util";
+import { pino } from "pino";
+import { prettyPrintJson, prettyPrintYaml } from "./util.ts";
 
 type Level = "fatal" | "error" | "warn" | "info" | "debug" | "trace";
 type LevelWithSilent = Level | "silent";
