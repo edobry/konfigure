@@ -1,5 +1,6 @@
-import { Flags, Interfaces } from "@oclif/core";
-import { Flag, FlagInput, ParserInput } from "@oclif/core/lib/interfaces";
+import { Args, Flags } from "@oclif/core";
+import { Flag } from "@oclif/core/lib/interfaces";
+import { Arg } from "@oclif/core/lib/interfaces/parser";
 // import { flags as parserFlags } from "@oclif/core";
 
 export const help = Flags.help({ char: "h" });
@@ -32,18 +33,21 @@ export const commonFlags = {
     help, dryrun, testing, auth, debug, cd, "base-dir": baseDir
 };
 
-export const envArg = {
+export const envArg = Args.string({
     name: "environment",
     description: "the environment konfiguration to use",
     required: true
-};
+});
 
-export const instanceArg = {
+export const instanceArg = Args.string({
     name: "instances",
     description: "the instances to process",
     required: true
+});
+
+export const commonArgs = {
+    environment: envArg
 };
 
-export const commonArgs = [envArg];
-
 export type Flags = { [index: string]: Flag<any> };
+export type Args = { [index: string]: Arg<any> };

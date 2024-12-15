@@ -5,7 +5,7 @@ import { codeBlock } from "common-tags";
 import * as fs from "fs-extra";
 import { CommandInput } from "./baseCommand";
 import { GlobalFileIO, IFileIO } from "./fileIo";
-import { Flags } from "./flags";
+import { Args, Flags } from "./flags";
 import Logger from "./logger";
 import { pretty, printArgs } from "./util";
 
@@ -56,7 +56,7 @@ export class Instance {
         return this.dep.source ?? "remote";
     }
 
-    isEnabled(input: CommandInput<any>): boolean {
+    isEnabled(input: CommandInput<any, any>): boolean {
         const { disabled, cdDisabled } = this.dep;
 
         return !disabled && !(input.flags.cd && cdDisabled);
@@ -301,7 +301,7 @@ export class Konfiguration {
         return this.props.chartDefaults[chartName];
     }
 
-    filterDeployments<T extends Flags>(input: CommandInput<T>) {
+    filterDeployments<F extends Flags, A extends Args>(input: CommandInput<F, A>) {
         let instancePredicate: (deployment: [string, Deployment]) => boolean;
 
         const filter: string[] = input.argv.slice(1);

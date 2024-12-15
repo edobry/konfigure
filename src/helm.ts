@@ -3,7 +3,7 @@ import * as fs from "fs-extra";
 import * as dir from "node-dir";
 import * as tmp from "tmp-promise";
 import { CommandContext } from "./commandContext";
-import { Flags } from "./flags";
+import { Args, Flags } from "./flags";
 import { Deployment, Instance, ValuesMap } from "./konfiguration";
 
 import Logger from "./logger";
@@ -39,7 +39,7 @@ export class HelmClient implements IHelmClient {
         }
     }
 
-    async updateHelmRepos<T extends Flags>({ env, input }: CommandContext<T>) {
+    async updateHelmRepos<F extends Flags, A extends Args>({ env, input }: CommandContext<F, A>) {
         this.log.infoBlank();
         this.log.info("Updating repositories...");
 
@@ -49,7 +49,7 @@ export class HelmClient implements IHelmClient {
 
 export const helmClient = new HelmClient();
 
-export class HelmChart<T extends Flags> {
+export class HelmChart<F extends Flags, A extends Args> {
     private log: Logger;
     private client: IHelmClient;
 
@@ -57,7 +57,7 @@ export class HelmChart<T extends Flags> {
         private name: string,
         private instance: Instance,
         private envValues: ValuesMap,
-        private ctx: CommandContext<T>,
+        private ctx: CommandContext<F, A>,
         client?: IHelmClient
     ) {
         this.log = new Logger(`${instance.chart}/${name}`);

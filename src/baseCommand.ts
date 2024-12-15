@@ -1,28 +1,28 @@
 // import { Command, Config, Input, OutputArgs, OutputFlags } from "@oclif/core";
 import { Command, Config, Interfaces } from "@oclif/core";
-import { OutputArgs, OutputFlags } from "@oclif/core/lib/interfaces/parser";
+import { Input, OutputArgs, OutputFlags } from "@oclif/core/lib/interfaces/parser";
 import { CommandContext } from "./commandContext";
-import { Flags, commonFlags, commonArgs } from "./flags";
+import { Flags, Args, commonFlags, commonArgs } from "./flags";
 import Logger from "./logger";
 
 export { processDeployments } from "./common";
 export { runCommand, runChiCommand } from "./shell";
 export { CommandContext } from "./commandContext";
 
-export type CommandFlags<T extends Flags> = {
-    flags: OutputFlags<T>;
+export type CommandFlags<F extends Flags> = {
+    flags: OutputFlags<F>;
 };
 
-export interface CommandInput<T extends Flags> extends CommandFlags<T> {
-    args: OutputArgs;
+export interface CommandInput<F extends Flags, A extends Args> extends CommandFlags<F> {
+    args: OutputArgs<A>;
     argv: string[];
 };
 
-export default abstract class BaseCommand<T extends Flags> extends Command {
+export default abstract class BaseCommand<F extends Flags, A extends Args> extends Command {
     static flags = commonFlags;
     static args = commonArgs;
 
-    private ctx?: CommandContext<T>;
+    private ctx?: CommandContext<F, A>;
 
     protected logger: Logger;
 
@@ -36,26 +36,26 @@ export default abstract class BaseCommand<T extends Flags> extends Command {
     }
 
     async init(): Promise<void> {
-        const input = await this.parse(this.constructor as Interfaces.Input<T>) as CommandInput<T>;
+        const input = await this.parse(this.constructor as Input<F, F, A>) as CommandInput<F, A>;
 
         if(input.flags.debug)
             Logger.setGlobalLevel("debug");
 
         this.printMode(input, this.constructor);
-        this.ctx = await CommandContext.init<T>(this.logger, input);
+        this.ctx = await CommandContext.init<F, A>(this.logger, input);
     }
 
     async run() {
         await this.command(this.ctx!);
     }
 
-    abstract command(ctx: CommandContext<T>): Promise<void>
+    abstract command(ctx: CommandContext<F, A>): Promise<void>
 
     async finally(_: Error | undefined) {
         await this.ctx?.env?.shell.close();
     }
 
-    printMode({ flags: { dryrun, testing, auth, debug } }: CommandFlags<T>, test: any) {
+    printMode({ flags: { dryrun, testing, auth, debug } }: CommandFlags<F>, test: any) {
         this.logger.info(`running ${test.name}`);
 
         if(dryrun)

@@ -1,17 +1,17 @@
 import { CommandContext } from "./commandContext";
-import { Flags } from "./flags";
+import { Args, Flags } from "./flags";
 import { HelmChart, HelmClient, helmClient as rootHelmClient, IHelmClient } from "./helm";
 import Logger from "./logger";
 
-export async function processDeployments<T extends Flags>(
-    ctx: CommandContext<T>,
-    chartHandler: (chart: HelmChart<T>) => Promise<any>,
+export async function processDeployments<F extends Flags, A extends Args>(
+    ctx: CommandContext<F, A>,
+    chartHandler: (chart: HelmChart<F, A>) => Promise<any>,
     skipRepoUpdate?: boolean,
     helmClient?: IHelmClient
 ) {
     const { env, input } = ctx;
 
-    const instances = env.konfig.filterDeployments<T>(input);
+    const instances = env.konfig.filterDeployments<F, A>(input);
 
     if(instances.length == 0) {
         Logger.root.info("No deployments configured, nothing to do. Exiting!");
@@ -37,7 +37,7 @@ export async function processDeployments<T extends Flags>(
 
     await Promise.all(
         instances
-            .map((instance) => new HelmChart<T>(...instance, envValues, ctx))
+            .map((instance) => new HelmChart<F, A>(...instance, envValues, ctx))
             .map(chartHandler)
     );
 };

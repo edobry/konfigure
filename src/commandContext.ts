@@ -1,7 +1,7 @@
 import * as k8s from "@kubernetes/client-node";
 
 import { CommandInput } from "./baseCommand";
-import { Flags } from "./flags";
+import { Args, Flags } from "./flags";
 import { Konfiguration } from "./konfiguration";
 import Logger from "./logger";
 import { initChiShell, InteractiveShell } from "./shell";
@@ -13,11 +13,11 @@ export type Environment = {
 
 export type K8sNamespaceApi = Pick<k8s.CoreV1Api, "readNamespace" | "createNamespace">;
 
-export class CommandContext<T extends Flags> {
-    static async init<T extends Flags>(
+export class CommandContext<F extends Flags, A extends Args> {
+    static async init<F extends Flags, A extends Args>(
         log: Logger,
-        input: CommandInput<T>
-    ): Promise<CommandContext<T>> {
+        input: CommandInput<F, A>
+    ): Promise<CommandContext<F, A>> {
         const { args, flags } = input;
 
         if(!args) throw new Error();
@@ -39,7 +39,7 @@ export class CommandContext<T extends Flags> {
 
     constructor(
         private log: Logger,
-        public input: CommandInput<T>,
+        public input: CommandInput<F, A>,
         public env: Environment
     ) {}
 
